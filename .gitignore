@@ -1,0 +1,7 @@
+*/bin/*
+*/gen/*
+*.pydevproject
+/android_mega_api/examples
+/mega_api/target/
+/mega_api/docs/
+/mega_api/src/test/

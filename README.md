@@ -1,4 +1,5 @@
 java_mega_api
-=============
+=====
 
-Mega.co.nz API for Java (and Android)
+mega.co.nz API for java and android
+
