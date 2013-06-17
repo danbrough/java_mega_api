@@ -9,8 +9,6 @@ package org.danbrough.mega;
 
 import java.io.IOException;
 
-import org.json.JSONException;
-
 public class Callback {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(Callback.class.getSimpleName());
@@ -23,7 +21,7 @@ public class Callback {
     log.error("onError()", exception);
   }
 
-  public void onResponse(Object o) throws JSONException {
+  public void onResponse(Object o) {
     log.debug("onResponse() {}", o);
   }
 }

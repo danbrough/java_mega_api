@@ -7,8 +7,6 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import org.json.JSONObject;
-
 /**
  * attributes:
  * 
@@ -17,16 +15,14 @@ import org.json.JSONObject;
  */
 
 public class MegaFile {
-  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(MegaFile.class.getSimpleName());
+  // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
+  // .getLogger(MegaFile.class.getSimpleName());
 
   public static final int TYPE_FILE = 0;
   public static final int TYPE_DIR = 1;
   public static final int TYPE_ROOT = 2;
   public static final int TYPE_INBOX = 3;
   public static final int TYPE_TRASH = 4;
-
-  private final JSONObject job = new JSONObject();
 
   public MegaFile() {
     super();

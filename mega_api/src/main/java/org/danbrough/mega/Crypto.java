@@ -8,6 +8,7 @@
 package org.danbrough.mega;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -18,6 +19,10 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import com.google.gson.JsonObject;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonWriter;
 
 public class Crypto {
   public static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
@@ -55,6 +60,7 @@ public class Crypto {
   }
 
   public String stringhash(String s, byte key[]) {
+    long startTime = System.currentTimeMillis();
     Cipher c = createCipher(key, Cipher.ENCRYPT_MODE);
 
     int s32[] = null;
@@ -77,7 +83,10 @@ public class Crypto {
         return null;
       }
     }
-    return base64urlencode(a32_to_bytes(new int[] { h32[0], h32[2] }));
+    String result = base64urlencode(a32_to_bytes(new int[] { h32[0], h32[2] }));
+    System.out.println("stringhash took "
+        + (System.currentTimeMillis() - startTime));
+    return result;
   }
 
   public String base64urlencode(byte[] data) {
@@ -287,4 +296,17 @@ public class Crypto {
     return t.multiply(p).add(xp);
   }
 
+  public String toPrettyString(JsonObject o) {
+
+    StringWriter out = new StringWriter();
+    JsonWriter writer = new JsonWriter(out);
+    writer.setIndent(" ");
+    writer.setLenient(true);
+    try {
+      Streams.write(o, writer);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return out.toString();
+  }
 }

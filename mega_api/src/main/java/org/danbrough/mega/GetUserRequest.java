@@ -7,21 +7,15 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import org.json.JSONException;
-
 public class GetUserRequest extends ApiRequest {
 
-  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(GetUserRequest.class.getSimpleName());
+  // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
+  // .getLogger(GetUserRequest.class.getSimpleName());
 
   public GetUserRequest(MegaAPI megaAPI) {
     super(megaAPI);
 
-    try {
-      getRequestData().put("a", "ug");
-    } catch (JSONException e) {
-      log.error(e.getMessage(), e);
-    }
+    getRequestData().addProperty("a", "ug");
 
   }
 }

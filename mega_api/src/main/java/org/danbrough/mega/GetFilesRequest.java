@@ -7,8 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonObject;
 
 public class GetFilesRequest extends ApiRequest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -16,22 +15,25 @@ public class GetFilesRequest extends ApiRequest {
 
   public GetFilesRequest(MegaAPI megaAPI) {
     super(megaAPI);
-    try {
-      getRequestData().put("a", "f").put("c", 1).put("r", 1);
-    } catch (JSONException e) {
-    }
+
+    JsonObject requestData = getRequestData();
+    requestData.addProperty("a", "f");
+    requestData.addProperty("c", "1");
+    requestData.addProperty("r", 1);
+
   }
 
   @Override
-  public void onResponse(Object obj) throws JSONException {
-    JSONObject o = (JSONObject) obj;
+  public void onResponse(Object obj) {
+    JsonObject o = (JsonObject) obj;
 
-    log.debug("onResponse() {}", o.toString(1));
+    log.debug("onResponse() {}", crypto.toPrettyString(o));
     if (o.has("u")) {
-      megaAPI.process_u(o.getJSONArray("u"));
+
+      megaAPI.process_u(o.get("u").getAsJsonArray());
     }
     if (o.has("ok")) {
-      megaAPI.process_ok(o.getJSONArray("ok"));
+      megaAPI.process_ok(o.get("ok").getAsJsonArray());
     }
     //
     // "s": [{
@@ -42,7 +44,7 @@ public class GetFilesRequest extends ApiRequest {
     // }],
     //
     if (o.has("s")) {
-      megaAPI.process_s(o.getJSONArray("s"));
+      megaAPI.process_s(o.get("s").getAsJsonArray());
 
     }
 
@@ -56,8 +58,8 @@ public class GetFilesRequest extends ApiRequest {
     // @Override
     // public void onResponse(Object o) {
     // try {
-    // log.debug("read: {}", ((JSONObject) o).toString(1));
-    // megaAPI.load_notifications((JSONObject) o);
+    // log.debug("read: {}", ((JsonObject) o).toString(1));
+    // megaAPI.load_notifications((JsonObject) o);
     // } catch (JSONException e) {
     // e.printStackTrace();
     // }

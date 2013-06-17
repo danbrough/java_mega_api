@@ -15,9 +15,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.LinkedList;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONTokener;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 public class Transport {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -148,28 +147,24 @@ public class Transport {
 
     BufferedReader input = new BufferedReader(new InputStreamReader(
         conn.getInputStream()));
-    StringBuffer responseData = new StringBuffer();
-    String s = null;
-    while ((s = input.readLine()) != null)
-      responseData.append(s);
-    input.close();
+    // StringBuffer responseData = new StringBuffer();
+    // String s = null;
+    // while ((s = input.readLine()) != null)
+    // responseData.append(s);
+    // input.close();
 
-    log.debug("read response {}", responseData);
-    try {
-      Object o = new JSONTokener(responseData.toString()).nextValue();
-      if (o instanceof JSONArray && ((JSONArray) o).length() == 1) {
-        Object value = ((JSONArray) o).get(0);
-        if (value instanceof Integer) {
-          request.onError((Integer) value);
-        } else {
-          request.onResponse(value);
-        }
+    JsonElement o = new JsonParser().parse(input);
+    if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
+      JsonElement element = o.getAsJsonArray().get(0);
+      if (element.isJsonPrimitive()) {
+        request.onError(element.getAsInt());
       } else {
-        request.onResponse(o);
+        request.onResponse(element.getAsJsonObject());
       }
-    } catch (JSONException e) {
-      throw new IOException(e.getMessage());
+    } else {
+      request.onResponse(o.getAsJsonObject());
     }
+
   }
 
   public boolean getRequestsPending() {

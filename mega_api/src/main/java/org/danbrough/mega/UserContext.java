@@ -9,11 +9,9 @@ package org.danbrough.mega;
 
 import java.math.BigInteger;
 import java.util.HashMap;
-import java.util.Iterator;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class UserContext {
   // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -92,68 +90,11 @@ public class UserContext {
     return sharedKeys;
   }
 
-  public JSONObject toJSON() {
-    JSONObject o = new JSONObject();
-    Crypto crypto = Crypto.getInstance();
-    try {
-      if (name != null)
-        o.put("name", name);
-      if (email != null)
-        o.put("email", email);
-      if (sid != null)
-        o.put("sid", sid);
-      if (masterKey != null)
-        o.put("masterKey", crypto.base64urlencode(masterKey));
-      if (passwordKey != null)
-        o.put("passwordKey", crypto.base64urlencode(passwordKey));
-      if (rsa_private_key != null) {
-        JSONArray a = new JSONArray();
-        for (int i = 0; i < rsa_private_key.length; i++) {
-          a.put(i, rsa_private_key[i].toString(16));
-        }
-        o.put("rsa_private_key", a);
-      }
-      JSONObject keys = new JSONObject();
-      for (String key : sharedKeys.keySet()) {
-        keys.put(key, crypto.base64urlencode(sharedKeys.get(key)));
-      }
-      o.put("sharedKeys", keys);
-    } catch (JSONException e) {
-      e.printStackTrace();
-    }
-    return o;
+  public JsonObject toJSON() {
+    return new Gson().toJsonTree(this, UserContext.class).getAsJsonObject();
   }
 
-  public void fromJSON(JSONObject o) {
-    Crypto crypto = Crypto.getInstance();
-
-    try {
-      if (o.has("name"))
-        name = o.getString("name");
-      if (o.has("sid"))
-        sid = o.getString("sid");
-      if (o.has("email"))
-        email = o.getString("email");
-      if (o.has("masterKey"))
-        masterKey = crypto.base64urldecode(o.getString("masterKey"));
-      if (o.has("passwordKey"))
-        passwordKey = crypto.base64urldecode(o.getString("passwordKey"));
-      if (o.has("rsa_private_key")) {
-        JSONArray a = o.getJSONArray("rsa_private_key");
-        rsa_private_key = new BigInteger[a.length()];
-        for (int i = 0; i < rsa_private_key.length; i++) {
-          rsa_private_key[i] = new BigInteger(a.getString(i), 16);
-        }
-      }
-      if (o.has("sharedKeys")) {
-        JSONObject keys = o.getJSONObject("sharedKeys");
-        for (Iterator i = keys.keys(); i.hasNext();) {
-          String key = (String) i.next();
-          sharedKeys.put(key, crypto.base64urldecode(keys.getString(key)));
-        }
-      }
-    } catch (JSONException e) {
-      e.printStackTrace();
-    }
+  public static UserContext fromJSON(JsonObject o) {
+    return new Gson().fromJson(o, UserContext.class);
   }
 }

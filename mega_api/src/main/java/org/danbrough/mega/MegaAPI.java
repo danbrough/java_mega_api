@@ -12,9 +12,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Random;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 public class MegaAPI {
 
@@ -46,9 +45,8 @@ public class MegaAPI {
     return ctx;
   }
 
-  public UserContext createUserContext(JSONObject conf) {
-    ctx = new UserContext();
-    ctx.fromJSON(conf);
+  public UserContext createUserContext(JsonObject conf) {
+    ctx = UserContext.fromJSON(conf);
     return ctx;
   }
 
@@ -101,28 +99,24 @@ public class MegaAPI {
     return ++sequence;
   }
 
-  protected void process_u(JSONArray a) {
+  protected void process_u(JsonArray a) {
     log.debug("process_u() {}", a);
-    try {
-      for (int i = 0; i < a.length(); i++) {
-        JSONObject o = a.getJSONObject(i);
 
-        int c = o.getInt("c");
-        String email = o.getString("m");
-        String u = o.getString("u");
-        log.debug("c " + c + " email: " + email + " u: " + u);
+    for (int i = 0; i < a.size(); i++) {
+      JsonObject o = a.get(i).getAsJsonObject();
 
-        if ((c == 1) && u.equals(currentuser)) {
-          // add this as a contact
-        } else if (c == 0) {
-          // delete this contact
-        } else if (c == 2) {
-          // this is the current user
-        }
+      int c = o.get("c").getAsInt();
+      String email = o.get("m").getAsString();
+      String u = o.get("u").getAsString();
+      log.debug("c " + c + " email: " + email + " u: " + u);
+
+      if ((c == 1) && u.equals(currentuser)) {
+        // add this as a contact
+      } else if (c == 0) {
+        // delete this contact
+      } else if (c == 2) {
+        // this is the current user
       }
-
-    } catch (JSONException e) {
-      e.printStackTrace();
     }
 
   }
@@ -134,20 +128,21 @@ public class MegaAPI {
    * if (ok[i].ha == crypto_handleauth(ok[i].h)) u_sharekeys[ok[i].h] =
    * decrypt_key(u_k_aes,base64_to_a32(ok[i].k));
    */
-  protected void process_ok(JSONArray ok) throws JSONException {
-    log.error("process_ok()");
-    log.debug("ok: {}", ok.toString(1));
+  protected void process_ok(JsonArray ok) {
+    log.debug("process_ok()");
+    log.debug("ok: {}", ok.toString());
+
     // "ok": [{
     // "h": "p08S2LyJ",
     // "ha": "_jQmHRNgfI_4CaQmuUE3ig",
     // "k": "rLH91zslsr2Y2MfRIREFKw"
     // }],
 
-    for (int i = 0; i < ok.length(); i++) {
-      JSONObject o = ok.getJSONObject(i);
-      String ha = o.getString("ha");
-      String h = o.getString("h");
-      String k = o.getString("k");
+    for (int i = 0; i < ok.size(); i++) {
+      JsonObject o = ok.get(i).getAsJsonObject();
+      String ha = o.get("ha").getAsString();
+      String h = o.get("h").getAsString();
+      String k = o.get("k").getAsString();
 
       log.debug("ha: " + ha + " h: " + h + " k: " + k);
       // crypto_handleauth('p08S2LyJ') should be "_jQmHRNgfI_4CaQmuUE3ig"
@@ -165,10 +160,10 @@ public class MegaAPI {
     }
   }
 
-  public void process_s(JSONArray s) throws JSONException {
+  public void process_s(JsonArray s) {
     // for(i in json.s)
-    for (int i = 0; i < s.length(); i++) {
-      JSONObject item = s.getJSONObject(i);
+    for (int i = 0; i < s.size(); i++) {
+      JsonObject item = s.get(i).getAsJsonObject();
 
       // {
       // if (u_sharekeys[json.s[i].h])
@@ -186,7 +181,7 @@ public class MegaAPI {
       // }
       //
 
-      String h = item.getString("h");
+      String h = item.get("h").getAsString();
       if (getUserContext().getSharedKeys().containsKey(h)) {
         log.debug("u_sharekeys[json.s[i].h] is true i: " + i + " h: {}", h);
 
@@ -205,25 +200,25 @@ public class MegaAPI {
     return text.toString();
   }
 
-  public void load_notifications(JSONObject o) throws JSONException {
+  public void load_notifications(JsonObject o) {
     log.info("load_notifications()");
 
     // NotificationStore.clearData();
     // maxaction = json.fsn;
     boolean nread = false;
     // var nread=false;
-    JSONArray c = o.getJSONArray("c");
-    log.debug("c.length = " + c.length());
-    for (int i = 0; i < c.length(); i++) {
-      if (o.getInt("la") == i)
+    JsonArray c = o.get("c").getAsJsonArray();
+    log.debug("c.length = " + c.size());
+    for (int i = 0; i < c.size(); i++) {
+      if (o.get("la").getAsInt() == i)
         nread = true;
-      JSONObject item = c.getJSONObject(i);
+      JsonObject item = c.get(i).getAsJsonObject();
 
       String id = makeid(10);
-      String type = item.getString("t");
+      String type = item.get("t").getAsString();
       int timestamp = (int) (System.currentTimeMillis() / 1000)
-          - item.getInt("td");
-      String user = item.getString("u");
+          - item.get("td").getAsInt();
+      String user = item.get("u").getAsString();
 
       // NotificationStore.loadData([
       // {

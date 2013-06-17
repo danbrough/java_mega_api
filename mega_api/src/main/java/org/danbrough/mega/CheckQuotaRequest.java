@@ -7,24 +7,25 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonObject;
 
 public class CheckQuotaRequest extends ApiRequest {
 
   long quota = 0;
 
-  public CheckQuotaRequest(MegaAPI megaAPI) throws JSONException {
+  public CheckQuotaRequest(MegaAPI megaAPI) {
     super(megaAPI);
-    getRequestData().put("a", "uq").put("xfer", 1);
+    JsonObject requestData = getRequestData();
+    requestData.addProperty("a", "uq");
+    requestData.addProperty("xfer", 1);
   }
 
   @Override
-  public void onResponse(Object o) throws JSONException {
-    JSONObject job = (JSONObject) o;
+  public void onResponse(Object o) {
+    JsonObject job = (JsonObject) o;
     if (!job.has("mstrg"))
-      throw new JSONException("Expecting a mstrg in the response");
-    quota = job.getLong("mstrg");
+      throw new RuntimeException("Expecting a mstrg in the response");
+    quota = job.get("mstrg").getAsLong();
   }
 
   public long getQuota() {

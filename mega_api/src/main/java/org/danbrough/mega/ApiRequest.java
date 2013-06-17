@@ -9,8 +9,7 @@ package org.danbrough.mega;
 
 import java.io.IOException;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonObject;
 
 public class ApiRequest extends Callback {
 
@@ -83,7 +82,7 @@ public class ApiRequest extends Callback {
   protected static Crypto crypto = new Crypto();
 
   private final int requestId;
-  private final JSONObject requestData = new JSONObject();
+  private final JsonObject requestData = new JsonObject();
 
   protected final MegaAPI megaAPI;
 
@@ -92,7 +91,7 @@ public class ApiRequest extends Callback {
     this.requestId = megaAPI.getNextRequestID();
   }
 
-  public final JSONObject getRequestData() {
+  public final JsonObject getRequestData() {
     return requestData;
   }
 
@@ -122,8 +121,8 @@ public class ApiRequest extends Callback {
   }
 
   @Override
-  public void onResponse(Object o) throws JSONException {
-    log.debug("onResponse() {}", ((JSONObject) o).toString(2));
+  public void onResponse(Object o) {
+    log.debug("onResponse() {}", ((JsonObject) o).toString());
   }
 
   public ApiRequest send() {

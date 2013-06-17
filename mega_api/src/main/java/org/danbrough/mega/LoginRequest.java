@@ -10,8 +10,7 @@ package org.danbrough.mega;
 import java.io.IOException;
 import java.math.BigInteger;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonObject;
 
 public class LoginRequest extends ApiRequest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -23,35 +22,40 @@ public class LoginRequest extends ApiRequest {
     super(megaAPI);
 
     ctx = getUserContext();
+
     String uh = crypto.stringhash(ctx.getEmail(), ctx.getPasswordKey());
 
-    getRequestData().put("a", "us").put("user", ctx.getEmail()).put("uh", uh);
+    JsonObject requestData = getRequestData();
+    requestData.addProperty("a", "us");
+    requestData.addProperty("user", ctx.getEmail());
+    requestData.addProperty("uh", uh);
   }
 
   @Override
-  public void onResponse(Object response) throws JSONException {
+  public void onResponse(Object response) {
     super.onResponse(response);
+
     try {
-      computeSid((JSONObject) response);
-    } catch (Exception e) {
+      computeSid((JsonObject) response);
+    } catch (IOException e) {
       log.error(e.getMessage(), e);
     }
+
   }
 
-  protected void computeSid(JSONObject response) throws JSONException,
-      IOException {
+  protected void computeSid(JsonObject response) throws IOException {
     log.info("computeSid()");
 
-    byte encrypted_master_key[] = crypto.base64urldecode(response
-        .getString("k"));
+    byte encrypted_master_key[] = crypto.base64urldecode(response.get("k")
+        .getAsString());
 
     byte master_key[] = crypto.decrypt_key(encrypted_master_key, megaAPI
         .getUserContext().getPasswordKey());
 
     megaAPI.getUserContext().setMasterKey(master_key);
 
-    byte encrypted_rsa_private_key[] = crypto.base64urldecode(response
-        .getString("privk"));
+    byte encrypted_rsa_private_key[] = crypto.base64urldecode(response.get(
+        "privk").getAsString());
 
     byte private_key[] = crypto.decrypt_key(encrypted_rsa_private_key,
         master_key);
@@ -83,7 +87,7 @@ public class LoginRequest extends ApiRequest {
     ctx.setRsaPrivateKey(rsa_private_key);
 
     BigInteger encrypted_sid = crypto.mpi2big(crypto.base64urldecode(response
-        .getString("csid")));
+        .get("csid").getAsString()));
 
     BigInteger bResult = crypto.RSAdecrypt(encrypted_sid, rsa_private_key[2],
         rsa_private_key[0], rsa_private_key[1], rsa_private_key[3]);
