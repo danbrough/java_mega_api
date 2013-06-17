@@ -17,19 +17,22 @@ public class LoginRequest extends ApiRequest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(LoginRequest.class.getSimpleName());
 
-  public LoginRequest(UserContext ctx) throws Exception {
-    super(ctx);
+  UserContext ctx;
 
+  public LoginRequest(MegaAPI megaAPI) throws Exception {
+    super(megaAPI);
+
+    ctx = getUserContext();
     String uh = crypto.stringhash(ctx.getEmail(), ctx.getPasswordKey());
 
     getRequestData().put("a", "us").put("user", ctx.getEmail()).put("uh", uh);
   }
 
   @Override
-  public void onResponse(JSONObject response) {
+  public void onResponse(Object response) throws JSONException {
     super.onResponse(response);
     try {
-      computeSid(response);
+      computeSid((JSONObject) response);
     } catch (Exception e) {
       log.error(e.getMessage(), e);
     }
@@ -42,8 +45,10 @@ public class LoginRequest extends ApiRequest {
     byte encrypted_master_key[] = crypto.base64urldecode(response
         .getString("k"));
 
-    byte master_key[] = crypto.decrypt_key(encrypted_master_key,
-        ctx.getPasswordKey());
+    byte master_key[] = crypto.decrypt_key(encrypted_master_key, megaAPI
+        .getUserContext().getPasswordKey());
+
+    megaAPI.getUserContext().setMasterKey(master_key);
 
     byte encrypted_rsa_private_key[] = crypto.base64urldecode(response
         .getString("privk"));
@@ -75,6 +80,8 @@ public class LoginRequest extends ApiRequest {
 
     }
 
+    ctx.setRsaPrivateKey(rsa_private_key);
+
     BigInteger encrypted_sid = crypto.mpi2big(crypto.base64urldecode(response
         .getString("csid")));
 
@@ -91,5 +98,4 @@ public class LoginRequest extends ApiRequest {
     ctx.setSid(sid);
 
   }
-
 }

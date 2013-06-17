@@ -8,20 +8,26 @@
 package org.danbrough.mega;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
-public class GetUserRequest extends ApiRequest {
+public class CheckQuotaRequest extends ApiRequest {
 
-  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(GetUserRequest.class.getSimpleName());
+  long quota = 0;
 
-  public GetUserRequest(MegaAPI megaAPI) {
+  public CheckQuotaRequest(MegaAPI megaAPI) throws JSONException {
     super(megaAPI);
+    getRequestData().put("a", "uq").put("xfer", 1);
+  }
 
-    try {
-      getRequestData().put("a", "ug");
-    } catch (JSONException e) {
-      log.error(e.getMessage(), e);
-    }
+  @Override
+  public void onResponse(Object o) throws JSONException {
+    JSONObject job = (JSONObject) o;
+    if (!job.has("mstrg"))
+      throw new JSONException("Expecting a mstrg in the response");
+    quota = job.getLong("mstrg");
+  }
 
+  public long getQuota() {
+    return quota;
   }
 }

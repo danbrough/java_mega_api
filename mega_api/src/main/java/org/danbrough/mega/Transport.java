@@ -15,8 +15,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.LinkedList;
 
+import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class Transport {
@@ -32,6 +32,7 @@ public class Transport {
   private boolean running = false;
 
   LinkedList<ApiRequest> requestQueue = new LinkedList<ApiRequest>();
+  int requestCount = 0;
 
   public Transport() {
     super();
@@ -88,17 +89,28 @@ public class Transport {
           request = requestQueue.getFirst();
         }
         if (request != null && running) {
-
-          try {
-            postRequest(request);
-          } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            request.onError(e);
-          }
-
           synchronized (requestQueue) {
-            requestQueue.removeFirst();
+            requestQueue.remove(request);
           }
+          final ApiRequest req = request;
+          Thread t = new Thread() {
+            @Override
+            public void run() {
+              try {
+                requestCount++;
+                postRequest(req);
+              } catch (IOException e) {
+                log.error(e.getMessage(), e);
+                req.onError(e);
+              } finally {
+                requestCount--;
+              }
+
+            }
+          };
+          t.setDaemon(false);
+          t.start();
+
         }
       }
     }
@@ -142,25 +154,26 @@ public class Transport {
       responseData.append(s);
     input.close();
 
-    String response = responseData.substring(1, responseData.length() - 1);
-
-    Object o;
+    log.debug("read response {}", responseData);
     try {
-      o = new JSONTokener(response).nextValue();
+      Object o = new JSONTokener(responseData.toString()).nextValue();
+      if (o instanceof JSONArray && ((JSONArray) o).length() == 1) {
+        Object value = ((JSONArray) o).get(0);
+        if (value instanceof Integer) {
+          request.onError((Integer) value);
+        } else {
+          request.onResponse(value);
+        }
+      } else {
+        request.onResponse(o);
+      }
     } catch (JSONException e) {
       throw new IOException(e.getMessage());
     }
-
-    if (o instanceof Integer) {
-      request.onError((Integer) o);
-    } else {
-      request.onResponse((JSONObject) o);
-    }
-
   }
 
   public boolean getRequestsPending() {
-    return !requestQueue.isEmpty();
+    return requestCount > 0 || !requestQueue.isEmpty();
   }
 
 }

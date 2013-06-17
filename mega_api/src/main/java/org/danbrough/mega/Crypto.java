@@ -202,6 +202,18 @@ public class Crypto {
     }
   }
 
+  protected String crypto_handleauth(String h, UserContext ctx) {
+    // return a32_to_base64(encrypt_key(u_k_aes,str_to_a32(h+h)));
+
+    try {
+      return base64urlencode(enccrypt_key((h + h).getBytes("ISO-8859-1"),
+          ctx.getMasterKey()));
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
   public static final Pattern EMAIL_ADDRESS = Pattern
       .compile("[a-zA-Z0-9\\+\\.\\_\\%\\-\\+]{1,256}" + "\\@"
           + "[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}" + "(" + "\\."
@@ -220,9 +232,9 @@ public class Crypto {
     return new BigInteger(toHex(bb), 16);
   }
 
-  public byte[] decrypt_key(byte a[], byte key[]) {
+  public byte[] process_key(byte a[], byte key[], int mode) {
     byte result[] = new byte[a.length];
-    Cipher cipher = createCipher(key, Cipher.DECRYPT_MODE);
+    Cipher cipher = createCipher(key, mode);
     for (int i = 0; i < a.length; i += 16) {
       byte copy[] = new byte[16];
       System.arraycopy(a, i, copy, 0, 16);
@@ -235,6 +247,14 @@ public class Crypto {
       }
     }
     return result;
+  }
+
+  public byte[] decrypt_key(byte a[], byte key[]) {
+    return process_key(a, key, Cipher.DECRYPT_MODE);
+  }
+
+  public byte[] enccrypt_key(byte a[], byte key[]) {
+    return process_key(a, key, Cipher.ENCRYPT_MODE);
   }
 
   public BigInteger RSAdecrypt(BigInteger m, BigInteger d, BigInteger p,

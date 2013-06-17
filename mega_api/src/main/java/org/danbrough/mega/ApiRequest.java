@@ -82,14 +82,14 @@ public class ApiRequest extends Callback {
 
   protected static Crypto crypto = new Crypto();
 
-  protected final UserContext ctx;
-
   private final int requestId;
   private final JSONObject requestData = new JSONObject();
 
-  public ApiRequest(UserContext ctx) {
-    this.ctx = ctx;
-    this.requestId = ctx.getNextRequestID();
+  protected final MegaAPI megaAPI;
+
+  public ApiRequest(MegaAPI megaAPI) {
+    this.megaAPI = megaAPI;
+    this.requestId = megaAPI.getNextRequestID();
   }
 
   public final JSONObject getRequestData() {
@@ -97,8 +97,9 @@ public class ApiRequest extends Callback {
   }
 
   public String getURL() {
-    String url = MegaProperties.getInstance().getApiPath() + "?id=" + requestId;
-
+    String url = MegaProperties.getInstance().getApiPath() + "cs?id="
+        + requestId;
+    UserContext ctx = megaAPI.getUserContext();
     if (ctx != null && ctx.getSid() != null) {
       url += "&sid=" + ctx.getSid();
     }
@@ -106,8 +107,8 @@ public class ApiRequest extends Callback {
     return url;
   }
 
-  public final UserContext getUserContext() {
-    return ctx;
+  protected final UserContext getUserContext() {
+    return megaAPI.getUserContext();
   }
 
   @Override
@@ -121,12 +122,11 @@ public class ApiRequest extends Callback {
   }
 
   @Override
-  public void onResponse(JSONObject o) {
-    try {
-      log.debug("onResponse() {}", o.toString(2));
-    } catch (JSONException e) {
-      e.printStackTrace();
-    }
+  public void onResponse(Object o) throws JSONException {
+    log.debug("onResponse() {}", ((JSONObject) o).toString(2));
+  }
 
+  public ApiRequest send() {
+    return megaAPI.sendRequest(this);
   }
 }

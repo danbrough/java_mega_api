@@ -1,9 +1,7 @@
 package org.danbrough.mega.test;
 
-import org.danbrough.mega.GetUserRequest;
 import org.danbrough.mega.LoginRequest;
 import org.danbrough.mega.MegaAPI;
-import org.json.JSONObject;
 
 import android.app.Activity;
 import android.os.AsyncTask;
@@ -43,6 +41,9 @@ public class MainActivity extends Activity {
           protected Void doInBackground(Void... params) {
 
             try {
+              mega.createUserContext(username.getText().toString(), password
+                  .getText().toString());
+
               loginTest(username.getText().toString(), password.getText()
                   .toString());
             } catch (Exception e) {
@@ -57,16 +58,15 @@ public class MainActivity extends Activity {
   }
 
   private void loginTest(String email, String password) throws Exception {
-    log.info("loginTest()");
+    log.info("loginTest() email: {} password: {}", email, password);
 
-    mega.sendRequest(new LoginRequest(email, password) {
-
+    new LoginRequest(mega) {
       @Override
-      protected void onResponse(JSONObject response) {
-        log.debug("got response: {}", response);
-        mega.sendRequest(new GetUserRequest(ctx));
-      }
-    });
+      public void onResponse(Object response) throws org.json.JSONException {
+        super.onResponse(response);
+      };
+
+    }.send();
 
   }
 }
