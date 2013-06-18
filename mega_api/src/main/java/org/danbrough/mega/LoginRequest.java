@@ -10,6 +10,7 @@ package org.danbrough.mega;
 import java.io.IOException;
 import java.math.BigInteger;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class LoginRequest extends ApiRequest {
@@ -32,11 +33,11 @@ public class LoginRequest extends ApiRequest {
   }
 
   @Override
-  public void onResponse(Object response) {
+  public void onResponse(JsonElement response) throws Exception {
     super.onResponse(response);
 
     try {
-      computeSid((JsonObject) response);
+      computeSid(response.getAsJsonObject());
     } catch (IOException e) {
       log.error(e.getMessage(), e);
     }

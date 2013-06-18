@@ -20,7 +20,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 
@@ -296,7 +296,7 @@ public class Crypto {
     return t.multiply(p).add(xp);
   }
 
-  public String toPrettyString(JsonObject o) {
+  public String toPrettyString(JsonElement o) {
 
     StringWriter out = new StringWriter();
     JsonWriter writer = new JsonWriter(out);

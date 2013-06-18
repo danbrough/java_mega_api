@@ -184,7 +184,10 @@ public class MegaAPI {
       String h = item.get("h").getAsString();
       if (getUserContext().getSharedKeys().containsKey(h)) {
         log.debug("u_sharekeys[json.s[i].h] is true i: " + i + " h: {}", h);
-
+        log.debug("id: " + (h + h) + " userid: " + item.get("u").getAsString()
+            + " folderid: " + item.get("h").getAsString() + " rights: "
+            + item.get("r").getAsInt());
+        // sharednodes[json.s[i].h]=true;
       }
 
     }

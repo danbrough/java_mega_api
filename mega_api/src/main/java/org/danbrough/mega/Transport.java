@@ -154,15 +154,19 @@ public class Transport {
     // input.close();
 
     JsonElement o = new JsonParser().parse(input);
-    if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
-      JsonElement element = o.getAsJsonArray().get(0);
-      if (element.isJsonPrimitive()) {
-        request.onError(element.getAsInt());
+    try {
+      if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
+        JsonElement element = o.getAsJsonArray().get(0);
+        if (element.isJsonPrimitive()) {
+          request.onError(element.getAsInt());
+        } else {
+          request.onResponse(element);
+        }
       } else {
-        request.onResponse(element.getAsJsonObject());
+        request.onResponse(o);
       }
-    } else {
-      request.onResponse(o.getAsJsonObject());
+    } catch (Exception e) {
+      request.onError(e);
     }
 
   }

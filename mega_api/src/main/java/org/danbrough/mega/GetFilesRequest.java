@@ -7,6 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class GetFilesRequest extends ApiRequest {
@@ -24,8 +25,8 @@ public class GetFilesRequest extends ApiRequest {
   }
 
   @Override
-  public void onResponse(Object obj) {
-    JsonObject o = (JsonObject) obj;
+  public void onResponse(JsonElement obj) {
+    JsonObject o = obj.getAsJsonObject();
 
     log.debug("onResponse() {}", crypto.toPrettyString(o));
     if (o.has("u")) {

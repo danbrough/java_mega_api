@@ -7,7 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import java.io.IOException;
+import com.google.gson.JsonElement;
 
 public class Callback {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -17,11 +17,11 @@ public class Callback {
     log.error("onError() code: " + code);
   }
 
-  public void onError(IOException exception) {
+  public void onError(Exception exception) {
     log.error("onError()", exception);
   }
 
-  public void onResponse(Object o) {
+  public void onResponse(JsonElement o) throws Exception {
     log.debug("onResponse() {}", o);
   }
 }

@@ -7,8 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import java.io.IOException;
-
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class ApiRequest extends Callback {
@@ -79,6 +78,24 @@ public class ApiRequest extends Callback {
   // Resource temporarily not available, please try again later
   public static final int ETEMPUNAVAIL = -18;
 
+  /**
+   * An exception for unexpected data being returned from the server
+   */
+  public static class ProtocolException extends Exception {
+    private static final long serialVersionUID = -4431010927582662822L;
+    JsonElement data;
+
+    public ProtocolException(JsonElement data, String msg) {
+      super(msg);
+      this.data = data;
+    }
+
+    public JsonElement getData() {
+      return data;
+    }
+
+  }
+
   protected static Crypto crypto = new Crypto();
 
   private final int requestId;
@@ -116,13 +133,13 @@ public class ApiRequest extends Callback {
   }
 
   @Override
-  public void onError(IOException exception) {
+  public void onError(Exception exception) {
     log.error("onError()", exception);
   }
 
   @Override
-  public void onResponse(Object o) {
-    log.debug("onResponse() {}", ((JsonObject) o).toString());
+  public void onResponse(JsonElement o) throws Exception {
+    log.debug("onResponse() {}", crypto.toPrettyString(o));
   }
 
   public ApiRequest send() {

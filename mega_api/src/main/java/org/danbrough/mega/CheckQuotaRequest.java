@@ -7,28 +7,39 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class CheckQuotaRequest extends ApiRequest {
 
   long quota = 0;
+  long usage = 0;
 
   public CheckQuotaRequest(MegaAPI megaAPI) {
     super(megaAPI);
     JsonObject requestData = getRequestData();
     requestData.addProperty("a", "uq");
     requestData.addProperty("xfer", 1);
+    requestData.addProperty("pro", 1);
+    requestData.addProperty("strg", 1);
   }
 
   @Override
-  public void onResponse(Object o) {
-    JsonObject job = (JsonObject) o;
+  public void onResponse(JsonElement o) throws Exception {
+    JsonObject job = o.getAsJsonObject();
     if (!job.has("mstrg"))
-      throw new RuntimeException("Expecting a mstrg in the response");
+      throw new ProtocolException(o, "Expecting a mstrg");
     quota = job.get("mstrg").getAsLong();
+    if (!job.has("cstrg"))
+      throw new ProtocolException(o, "Expecting a cstrg");
+    usage = job.get("cstrg").getAsLong();
   }
 
   public long getQuota() {
     return quota;
+  }
+
+  public long getUsage() {
+    return usage;
   }
 }
