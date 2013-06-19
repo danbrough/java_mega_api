@@ -15,7 +15,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 
 public class TestActivity extends Activity {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -42,9 +42,8 @@ public class TestActivity extends Activity {
     MegaAPI mega = TestApplication.getInstance().getMega();
     new GetFilesRequest(mega) {
       @Override
-      public void onResponse(Object obj) {
+      public void onResponse(JsonElement obj) {
         super.onResponse(obj);
-        JsonObject job = (JsonObject) obj;
       }
     }.send();
   }

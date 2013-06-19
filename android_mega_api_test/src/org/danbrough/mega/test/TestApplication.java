@@ -7,6 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega.test;
 
+import org.danbrough.mega.Crypto;
 import org.danbrough.mega.MegaAPI;
 import org.danbrough.mega.UserContext;
 
@@ -50,7 +51,7 @@ public class TestApplication {
   public void saveUserContext() {
     UserContext ctx = mega.getUserContext();
 
-    String s = ctx.toJSON().toString();
+    String s = Crypto.getInstance().toJSON(ctx).toString();
     log.debug("saving userContext: {}", s);
     getPrefs().edit().putString("userContext", s).commit();
   }

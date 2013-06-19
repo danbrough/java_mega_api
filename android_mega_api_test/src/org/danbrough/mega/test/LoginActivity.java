@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.gson.JsonElement;
+
 public class LoginActivity extends Activity {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(LoginActivity.class.getSimpleName());
@@ -58,7 +60,7 @@ public class LoginActivity extends Activity {
     try {
       new LoginRequest(mega) {
         @Override
-        public void onResponse(Object response) {
+        public void onResponse(JsonElement response) {
           super.onResponse(response);
           TestApplication.getInstance().saveUserContext();
         };
