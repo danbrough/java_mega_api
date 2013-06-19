@@ -9,11 +9,13 @@ package org.danbrough.mega;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.LinkedList;
+import java.util.zip.GZIPInputStream;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -136,6 +138,7 @@ public class Transport {
     conn.setUseCaches(false);
     conn.setRequestProperty("User-Agent", userAgent);
     conn.setRequestProperty("Content-Type", "application/json");
+    conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
     conn.setAllowUserInteraction(false);
     conn.setRequestMethod("POST");
 
@@ -145,15 +148,14 @@ public class Transport {
     output.write(requestData);
     output.close();
 
-    BufferedReader input = new BufferedReader(new InputStreamReader(
-        conn.getInputStream()));
-    // StringBuffer responseData = new StringBuffer();
-    // String s = null;
-    // while ((s = input.readLine()) != null)
-    // responseData.append(s);
-    // input.close();
+    log.debug("content length: " + conn.getContentLength());
 
-    JsonElement o = new JsonParser().parse(input);
+    InputStream is = conn.getInputStream();
+    if ("gzip".equals(conn.getContentEncoding()))
+      is = new GZIPInputStream(is);
+
+    JsonElement o = new JsonParser().parse(new BufferedReader(
+        new InputStreamReader(is)));
     try {
       if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
         JsonElement element = o.getAsJsonArray().get(0);
