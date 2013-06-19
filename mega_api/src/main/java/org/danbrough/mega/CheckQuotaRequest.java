@@ -7,6 +7,8 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import org.danbrough.mega.MegaAPI.ProtocolException;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -25,8 +27,9 @@ public class CheckQuotaRequest extends ApiRequest {
   }
 
   @Override
-  public void onResponse(JsonElement o) throws Exception {
+  public void onResponse(JsonElement o) {
     JsonObject job = o.getAsJsonObject();
+
     if (!job.has("mstrg"))
       throw new ProtocolException(o, "Expecting a mstrg");
     quota = job.get("mstrg").getAsLong();

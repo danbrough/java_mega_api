@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.util.regex.Pattern;
 
 import javax.crypto.BadPaddingException;
@@ -20,17 +19,59 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 
 public class Crypto {
-  public static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
+  public static final String ISO_8859_1 = "ISO-8859-1";
 
   private static final Crypto INSTANCE = new Crypto();
 
   public static Crypto getInstance() {
     return INSTANCE;
+  }
+
+  public String decrypt_attrs(String attrs, byte key[]) {
+
+    try {
+      // byte data[] = createCipher(key, Cipher.DECRYPT_MODE).doFinal(
+      // base64urldecode(attrs));
+      byte data[] = createCipher(key, Cipher.DECRYPT_MODE).doFinal(
+          base64urldecode(attrs));
+      attrs = new String(data, ISO_8859_1);
+
+      int i = attrs.indexOf(0);
+      if (i > -1) {
+        attrs = attrs.substring(0, i);
+      }
+      return attrs;
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+  }
+
+  public String encrypt_attrs(String attrs, byte key[]) {
+    attrs = "MEGA{" + attrs;
+
+    for (int i = 0; i < 16 - attrs.length() % 16; i++) {
+      attrs = attrs + '\0';
+    }
+    Cipher cipher = createCipher(key, Cipher.ENCRYPT_MODE);
+
+    try {
+      byte[] data = cipher.doFinal(attrs.getBytes());
+      return base64urlencode(data);
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public byte[] a32_to_bytes(int a[]) {
@@ -65,7 +106,7 @@ public class Crypto {
 
     int s32[] = null;
     try {
-      s32 = bytes_to_a32(s.getBytes("ISO-8859-1"));
+      s32 = bytes_to_a32(s.getBytes(ISO_8859_1));
     } catch (UnsupportedEncodingException e1) {
       e1.printStackTrace();
     }
@@ -130,7 +171,7 @@ public class Crypto {
   public byte[] prepareKey(String password) {
     try {
       return a32_to_bytes(prepare_key(bytes_to_a32(password
-          .getBytes("ISO-8859-1"))));
+          .getBytes(ISO_8859_1))));
     } catch (UnsupportedEncodingException e) {
       e.printStackTrace();
       return null;
@@ -215,7 +256,7 @@ public class Crypto {
     // return a32_to_base64(encrypt_key(u_k_aes,str_to_a32(h+h)));
 
     try {
-      return base64urlencode(enccrypt_key((h + h).getBytes("ISO-8859-1"),
+      return base64urlencode(enccrypt_key((h + h).getBytes(ISO_8859_1),
           ctx.getMasterKey()));
     } catch (UnsupportedEncodingException e) {
       e.printStackTrace();
@@ -241,7 +282,7 @@ public class Crypto {
     return new BigInteger(toHex(bb), 16);
   }
 
-  public byte[] process_key(byte a[], byte key[], int mode) {
+  private byte[] process_key(byte a[], byte key[], int mode) {
     byte result[] = new byte[a.length];
     Cipher cipher = createCipher(key, mode);
     for (int i = 0; i < a.length; i += 16) {
@@ -308,5 +349,13 @@ public class Crypto {
       e.printStackTrace();
     }
     return out.toString();
+  }
+
+  public JsonElement toJSON(Object o) {
+    return new Gson().toJsonTree(o);
+  }
+
+  public <T> T fromJSON(JsonObject o, Class<T> cls) {
+    return new Gson().fromJson(o, cls);
   }
 }

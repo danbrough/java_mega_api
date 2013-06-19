@@ -13,19 +13,42 @@ import java.io.InputStreamReader;
 import java.util.Random;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class MegaAPI {
 
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaAPI.class.getSimpleName());
 
+  public static interface FilesVisitor {
+    public boolean visit(MegaFile file);
+  }
+
+  /**
+   * An exception for unexpected data being returned from the server
+   */
+  public static class ProtocolException extends RuntimeException {
+
+    private static final long serialVersionUID = -1342234110424726551L;
+    JsonElement data;
+
+    public ProtocolException(JsonElement data, String msg) {
+      super(msg);
+      this.data = data;
+    }
+
+    public JsonElement getData() {
+      return data;
+    }
+
+  }
+
   protected final Crypto crypto;
   protected final Transport transport;
-  private UserContext ctx;
+  private UserContext user;
   private int sequence = (int) Math.ceil((Math.random() * 1000000000));
-
-  private String currentuser;
 
   public MegaAPI() {
     super();
@@ -39,19 +62,19 @@ public class MegaAPI {
   }
 
   public UserContext createUserContext(String email, byte passwordKey[]) {
-    ctx = new UserContext();
-    ctx.setEmail(email);
-    ctx.setPasswordKey(passwordKey);
-    return ctx;
+    user = new UserContext();
+    user.setEmail(email);
+    user.setPasswordKey(passwordKey);
+    return user;
   }
 
   public UserContext createUserContext(JsonObject conf) {
-    ctx = UserContext.fromJSON(conf);
-    return ctx;
+    user = crypto.fromJSON(conf, UserContext.class);
+    return user;
   }
 
   public UserContext getUserContext() {
-    return ctx;
+    return user;
   }
 
   protected Crypto createCrypto() {
@@ -100,7 +123,7 @@ public class MegaAPI {
   }
 
   protected void process_u(JsonArray a) {
-    log.debug("process_u() {}", a);
+    log.info("process_u() {}", a);
 
     for (int i = 0; i < a.size(); i++) {
       JsonObject o = a.get(i).getAsJsonObject();
@@ -110,12 +133,13 @@ public class MegaAPI {
       String u = o.get("u").getAsString();
       log.debug("c " + c + " email: " + email + " u: " + u);
 
-      if ((c == 1) && u.equals(currentuser)) {
+      if ((c == 1) && !u.equals(user.getHandle())) {
         // add this as a contact
       } else if (c == 0) {
         // delete this contact
       } else if (c == 2) {
         // this is the current user
+        user.setHandle(u);
       }
     }
 
@@ -129,7 +153,7 @@ public class MegaAPI {
    * decrypt_key(u_k_aes,base64_to_a32(ok[i].k));
    */
   protected void process_ok(JsonArray ok) {
-    log.debug("process_ok()");
+    log.info("process_ok()");
     log.debug("ok: {}", ok.toString());
 
     // "ok": [{
@@ -146,21 +170,22 @@ public class MegaAPI {
 
       log.debug("ha: " + ha + " h: " + h + " k: " + k);
       // crypto_handleauth('p08S2LyJ') should be "_jQmHRNgfI_4CaQmuUE3ig"
-      String s = crypto.crypto_handleauth(h, ctx);
+      String s = crypto.crypto_handleauth(h, user);
 
       // if (ok[i].ha == crypto_handleauth(ok[i].h)) u_sharekeys[ok[i].h] =
       // decrypt_key(u_k_aes,base64_to_a32(ok[i].k));
 
       if (ha.equals(s)) {
-        byte decKey[] = crypto.decrypt_key(ctx.getMasterKey(),
+        byte decKey[] = crypto.decrypt_key(user.getMasterKey(),
             crypto.base64urldecode(k));
-        ctx.getSharedKeys().put(h, decKey);
+        user.getSharedKeys().put(h, decKey);
         log.debug("added sharedkey: {}", h);
       }
     }
   }
 
   public void process_s(JsonArray s) {
+    log.info("process_s() {}", s);
     // for(i in json.s)
     for (int i = 0; i < s.size(); i++) {
       JsonObject item = s.get(i).getAsJsonObject();
@@ -242,4 +267,155 @@ public class MegaAPI {
 
   }
 
+  public void processFiles(JsonArray files, FilesVisitor visitor) {
+    for (JsonElement file : files) {
+      if (!processFile(file.getAsJsonObject(), visitor))
+        return;
+    }
+  }
+
+  private void processKey(MegaFile file, String attrs) {
+    log.debug("processKey() {}", file.getHandle());
+
+    String k = file.getKey();
+    if (k == null) {
+      log.error("file has no key");
+      return;
+    }
+
+    String id = user.getHandle();
+    log.debug("me: {}", id);
+    int p = k.indexOf(id + ':');
+
+    if (p == -1) {
+      log.trace("file is not owned by me");
+      // check to see if I have a suitable shared key
+      // if not .. record as missing
+      return;
+    }
+
+    // i own the file
+
+    // delete keycache[file.h];
+
+    int pp = k.indexOf('/', p);
+
+    if (pp < 0)
+      pp = k.length();
+    p += id.length() + 1;
+    String key = k.substring(p, pp);
+
+    log.trace("key {}", key);
+    if (key.length() < 46) {
+      log.trace("short key aes");
+      // k = decrypt_key(id == me ? master_aes : new
+      // sjcl.cipher.aes(u_sharekeys[id]),k);
+
+      byte dec_key[] = crypto.base64urldecode(key);
+
+      log.debug("master_key length:{} dec_key.length:{}",
+          user.getMasterKey().length, dec_key.length);
+
+      dec_key = crypto.decrypt_key(dec_key, user.getMasterKey());
+
+      if (file.getType() == MegaFile.TYPE_FILE) {
+        // int a32Key[] = crypto.bytes_to_a32(dec_key);
+        // int newkey[] = { a32Key[0] ^ a32Key[4], a32Key[1] ^ a32Key[5],
+        // a32Key[2] ^ a32Key[6], a32Key[3] ^ a32Key[7] };
+        // dec_key = crypto.a32_to_bytes(newkey);
+        byte new_key[] = new byte[16];
+        for (int j = 0; j < new_key.length; j++) {
+          new_key[j] = (byte) (dec_key[j] ^ dec_key[j + 16]);
+        }
+        dec_key = new_key;
+      }
+
+      attrs = crypto.decrypt_attrs(attrs, dec_key);
+      if (attrs.startsWith("MEGA{")) {
+        attrs = attrs.substring(4);
+        file.setAttributes(new JsonParser().parse(attrs).getAsJsonObject());
+        log.trace("attrs {}", crypto.toPrettyString(file.getAttributes()));
+        if (file.getAttributes().has("n")) {
+          file.setName(file.getAttributes().get("n").getAsString());
+        }
+      } else
+        log.error("failed to decode attribute");
+
+    } else {
+      // long keys rsa
+      log.trace("long key rsa");
+    }
+
+  }
+
+  public boolean processFile(JsonObject o, FilesVisitor visitor) {
+    log.debug("processFile() {}", o.toString());
+
+    int t = o.get("t").getAsInt();
+    String h = o.get("h").getAsString();
+
+    MegaFile file = new MegaFile(h);
+    file.setType(t);
+    file.setTimestamp(o.get("ts").getAsInt());
+
+    // if (f.sk) u_sharekeys[f.h] = crypto_process_sharekey(f.h,f.sk);
+    if (o.has("sk")) {
+      log.warn("found sk");
+    }
+
+    // if ((f.t !== 2) && (f.t !== 3) && (f.t !== 4) && (f.k))
+    // {
+    // crypto_processkey(u_handle,u_k_aes,f);
+    // u_nodekeys[f.h] = f.key;
+    //
+    // if ((typeof f.name !== 'undefined') && (f.p == InboxID)) InboxCount++;
+    // }
+
+    if ((t != 2) && (t != 3) && (t != 4) && o.has("k")) {
+      file.setKey(o.get("k").getAsString());
+      processKey(file, o.get("a").getAsString());
+    }
+    // else
+    // {
+    // if (f.a)
+    // {
+    // if (!missingkeys[f.h])
+    // {
+    // missingkeys[f.h] =true;
+    // newmissingkeys = true;
+    // }
+    // }
+    // f.k = '';
+    // f.name = '';
+    // }
+    else {
+      if (o.has("a")) {
+        log.debug("o.a exists");
+      }
+    }
+
+    // if (f.t == 2) RootID = f.h;
+    // else if (f.t == 3) InboxID = f.h;
+    // else if (f.t == 4) TrashbinID = f.h;
+
+    if (t == MegaFile.TYPE_ROOT) {
+      user.setRootId(h);
+    } else if (t == MegaFile.TYPE_INBOX) {
+      user.setInboxId(h);
+    } else if (t == MegaFile.TYPE_TRASH) {
+      user.setTrashId(h);
+    }
+    // else if ((f.t < 2) || (f.t == 5))
+    else if ((t < 2) || (t == 5)) {
+      // if (f.t == 5)
+      // {
+      // f.p = f.u;
+      // f.t = 1;
+      // }
+      if (t == 5) {
+        log.debug("t == 5");
+      }
+    }
+    return visitor.visit(file);
+  }
 }

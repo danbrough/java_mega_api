@@ -78,24 +78,6 @@ public class ApiRequest extends Callback {
   // Resource temporarily not available, please try again later
   public static final int ETEMPUNAVAIL = -18;
 
-  /**
-   * An exception for unexpected data being returned from the server
-   */
-  public static class ProtocolException extends Exception {
-    private static final long serialVersionUID = -4431010927582662822L;
-    JsonElement data;
-
-    public ProtocolException(JsonElement data, String msg) {
-      super(msg);
-      this.data = data;
-    }
-
-    public JsonElement getData() {
-      return data;
-    }
-
-  }
-
   protected static Crypto crypto = new Crypto();
 
   private final int requestId;
@@ -138,7 +120,7 @@ public class ApiRequest extends Callback {
   }
 
   @Override
-  public void onResponse(JsonElement o) throws Exception {
+  public void onResponse(JsonElement o) {
     log.debug("onResponse() {}", crypto.toPrettyString(o));
   }
 

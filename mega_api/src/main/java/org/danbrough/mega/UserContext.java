@@ -10,9 +10,6 @@ package org.danbrough.mega;
 import java.math.BigInteger;
 import java.util.HashMap;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 public class UserContext {
   // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
   // .getLogger(UserContext.class.getSimpleName());
@@ -33,6 +30,12 @@ public class UserContext {
   private final HashMap<String, byte[]> sharedKeys = new HashMap<String, byte[]>();
 
   private byte[] masterKey;
+
+  private String rootId;
+  private String trashId;
+  private String inboxId;
+
+  private String handle;
 
   protected UserContext() {
     super();
@@ -90,11 +93,35 @@ public class UserContext {
     return sharedKeys;
   }
 
-  public JsonObject toJSON() {
-    return new Gson().toJsonTree(this, UserContext.class).getAsJsonObject();
+  public String getRootId() {
+    return rootId;
   }
 
-  public static UserContext fromJSON(JsonObject o) {
-    return new Gson().fromJson(o, UserContext.class);
+  public void setRootId(String rootId) {
+    this.rootId = rootId;
+  }
+
+  public String getTrashId() {
+    return trashId;
+  }
+
+  public void setTrashId(String trashId) {
+    this.trashId = trashId;
+  }
+
+  public String getInboxId() {
+    return inboxId;
+  }
+
+  public void setInboxId(String inboxId) {
+    this.inboxId = inboxId;
+  }
+
+  public void setHandle(String u) {
+    this.handle = u;
+  }
+
+  public String getHandle() {
+    return handle;
   }
 }

@@ -7,6 +7,8 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import org.danbrough.mega.MegaAPI.FilesVisitor;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -68,5 +70,15 @@ public class GetFilesRequest extends ApiRequest {
     // });
     //
 
+    if (o.has("f")) {
+      megaAPI.processFiles(o.get("f").getAsJsonArray(), new FilesVisitor() {
+
+        @Override
+        public boolean visit(MegaFile file) {
+          log.debug("visited {}", file);
+          return true;
+        }
+      });
+    }
   }
 }

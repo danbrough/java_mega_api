@@ -33,7 +33,7 @@ public class LoginRequest extends ApiRequest {
   }
 
   @Override
-  public void onResponse(JsonElement response) throws Exception {
+  public void onResponse(JsonElement response) {
     super.onResponse(response);
 
     try {

@@ -21,7 +21,7 @@ public class Callback {
     log.error("onError()", exception);
   }
 
-  public void onResponse(JsonElement o) throws Exception {
+  public void onResponse(JsonElement o) {
     log.debug("onResponse() {}", o);
   }
 }
