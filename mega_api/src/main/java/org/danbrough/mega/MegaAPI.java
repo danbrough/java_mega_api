@@ -48,12 +48,14 @@ public class MegaAPI {
   protected final Crypto crypto;
   protected final Transport transport;
   private UserContext user;
-  private int sequence = (int) Math.ceil((Math.random() * 1000000000));
+
+  protected final ThreadPool threadPool;
 
   public MegaAPI() {
     super();
     this.crypto = createCrypto();
-    this.transport = createTransport();
+    this.threadPool = createThreadPool();
+    this.transport = createTransport(threadPool);
   }
 
   public UserContext createUserContext(String email, String password) {
@@ -77,12 +79,20 @@ public class MegaAPI {
     return user;
   }
 
+  public ThreadPool getThreadPool() {
+    return threadPool;
+  }
+
   protected Crypto createCrypto() {
     return new Crypto();
   }
 
-  protected Transport createTransport() {
-    return new Transport();
+  protected ThreadPool createThreadPool() {
+    return new ThreadPool();
+  }
+
+  protected Transport createTransport(ThreadPool pool) {
+    return new Transport(pool);
   }
 
   public String getTermsHTML() {
@@ -105,21 +115,20 @@ public class MegaAPI {
 
   public void start() {
     log.info("start()");
+    threadPool.start();
     transport.start();
+
   }
 
   public void stop() {
     log.info("stop()");
     transport.stop();
+    threadPool.stop();
   }
 
   protected ApiRequest sendRequest(ApiRequest request) {
     transport.queueRequest(request);
     return request;
-  }
-
-  protected final int getNextRequestID() {
-    return ++sequence;
   }
 
   protected void process_u(JsonArray a) {
@@ -418,4 +427,5 @@ public class MegaAPI {
     }
     return visitor.visit(file);
   }
+
 }

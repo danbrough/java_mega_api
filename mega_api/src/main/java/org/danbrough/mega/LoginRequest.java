@@ -26,7 +26,7 @@ public class LoginRequest extends ApiRequest {
 
     String uh = crypto.stringhash(ctx.getEmail(), ctx.getPasswordKey());
 
-    JsonObject requestData = getRequestData();
+    requestData = new JsonObject();
     requestData.addProperty("a", "us");
     requestData.addProperty("user", ctx.getEmail());
     requestData.addProperty("uh", uh);

@@ -11,32 +11,44 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.zip.GZIPInputStream;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 
 public class Transport {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(Transport.class.getSimpleName());
 
-  static String userAgent = "MegaJAVA";
-
-  static {
-    userAgent = MegaProperties.getInstance().getUserAgent();
-  }
+  private String userAgent;
+  private String apiPath;
 
   private boolean running = false;
 
-  LinkedList<ApiRequest> requestQueue = new LinkedList<ApiRequest>();
-  int requestCount = 0;
+  private final LinkedList<ApiRequest> requestQueue = new LinkedList<ApiRequest>();
+  private int requestCount = 0;
+  private final ThreadPool threadPool;
 
-  public Transport() {
+  public Transport(ThreadPool threadPool) {
     super();
+    MegaProperties props = MegaProperties.getInstance();
+    userAgent = props.getUserAgent();
+    apiPath = props.getApiPath();
+    this.threadPool = threadPool;
+  }
+
+  public void setUserAgent(String userAgent) {
+    this.userAgent = userAgent;
+  }
+
+  public void setApiPath(String apiPath) {
+    this.apiPath = apiPath;
   }
 
   public synchronized void start() {
@@ -94,7 +106,8 @@ public class Transport {
             requestQueue.remove(request);
           }
           final ApiRequest req = request;
-          Thread t = new Thread() {
+          threadPool.background(new Runnable() {
+
             @Override
             public void run() {
               try {
@@ -106,11 +119,8 @@ public class Transport {
               } finally {
                 requestCount--;
               }
-
             }
-          };
-          t.setDaemon(false);
-          t.start();
+          });
 
         }
       }
@@ -128,12 +138,28 @@ public class Transport {
   protected void postRequest(ApiRequest request) throws IOException {
     log.debug("postRequest() {}", request);
 
-    String url = request.getURL();
+    String url = apiPath;
+    JsonObject requestData = request.getRequestData();
 
-    log.debug("url: {}", url);
+    if (requestData != null) {
+      url += "cs?id=" + request.getRequestId();
+      String sid = request.getUserContext().getSid();
+      if (sid != null)
+        url += "&sid=" + sid;
+    } else {
+      // sc request
+      String params = request.getRequestParams();
+      if (params == null) {
+        log.error("Neither request data or request params available");
+        return;
+      }
+      url += params;
+    }
+
+    log.trace("url: {}", url);
 
     HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-    conn.setDoOutput(true);
+
     conn.setDoInput(true);
     conn.setUseCaches(false);
     conn.setRequestProperty("User-Agent", userAgent);
@@ -142,33 +168,44 @@ public class Transport {
     conn.setAllowUserInteraction(false);
     conn.setRequestMethod("POST");
 
-    String requestData = '[' + request.getRequestData().toString() + ']';
-    log.debug("requestData {}", requestData);
-    OutputStreamWriter output = new OutputStreamWriter(conn.getOutputStream());
-    output.write(requestData);
-    output.close();
+    if (requestData != null) {
+      conn.setDoOutput(true);
+      String toPost = '[' + requestData.toString() + ']';
+      log.trace("posting <{}>", toPost);
+      byte data[] = toPost.getBytes("UTF-8");
+      conn.setRequestProperty("Content-Length", String.valueOf(data.length));
+      OutputStream output = conn.getOutputStream();
+      output.write(data);
+      output.close();
+    }
 
-    log.debug("content length: " + conn.getContentLength());
+    log.trace("content length: " + conn.getContentLength());
 
     InputStream is = conn.getInputStream();
     if ("gzip".equals(conn.getContentEncoding()))
       is = new GZIPInputStream(is);
 
-    JsonElement o = new JsonParser().parse(new BufferedReader(
-        new InputStreamReader(is)));
     try {
-      if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
-        JsonElement element = o.getAsJsonArray().get(0);
-        if (element.isJsonPrimitive()) {
-          request.onError(element.getAsInt());
-        } else {
-          request.onResponse(element);
+      JsonElement o = new JsonParser().parse(new BufferedReader(
+          new InputStreamReader(is)));
+
+      if (o.isJsonPrimitive() && o.getAsInt() == ApiRequest.EAGAIN) {
+        int retryTime = request.getRetryTime();
+        retryTime = retryTime == 0 ? 125 : 2 * retryTime;
+        request.setRetryTime(retryTime);
+        log.warn("EAGAIN: " + retryTime);
+        try {
+          Thread.sleep(retryTime);
+        } catch (InterruptedException e) {
+          log.error(e.getMessage(), e);
         }
-      } else {
-        request.onResponse(o);
+        queueRequest(request);
+        return;
       }
-    } catch (Exception e) {
-      request.onError(e);
+
+      request.setResponse(o);
+    } catch (JsonParseException e) {
+      log.error(e.getMessage(), e);
     }
 
   }

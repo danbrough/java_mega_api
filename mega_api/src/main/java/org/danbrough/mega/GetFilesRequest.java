@@ -19,7 +19,7 @@ public class GetFilesRequest extends ApiRequest {
   public GetFilesRequest(MegaAPI megaAPI) {
     super(megaAPI);
 
-    JsonObject requestData = getRequestData();
+    requestData = new JsonObject();
     requestData.addProperty("a", "f");
     requestData.addProperty("c", "1");
     requestData.addProperty("r", 1);
@@ -31,10 +31,15 @@ public class GetFilesRequest extends ApiRequest {
     JsonObject o = obj.getAsJsonObject();
 
     log.debug("onResponse() {}", crypto.toPrettyString(o));
-    if (o.has("u")) {
 
+    if (o.has("sn")) {
+      megaAPI.getUserContext().setSn(o.get("sn").getAsString());
+    }
+
+    if (o.has("u")) {
       megaAPI.process_u(o.get("u").getAsJsonArray());
     }
+
     if (o.has("ok")) {
       megaAPI.process_ok(o.get("ok").getAsJsonArray());
     }
@@ -46,9 +51,9 @@ public class GetFilesRequest extends ApiRequest {
     // "u": "vnO5t0dt9iU"
     // }],
     //
+
     if (o.has("s")) {
       megaAPI.process_s(o.get("s").getAsJsonArray());
-
     }
 
     // final String n_sn = "&sn=" + o.getString("sn");
@@ -72,7 +77,6 @@ public class GetFilesRequest extends ApiRequest {
 
     if (o.has("f")) {
       megaAPI.processFiles(o.get("f").getAsJsonArray(), new FilesVisitor() {
-
         @Override
         public boolean visit(MegaFile file) {
           log.debug("visited {}", file);
@@ -80,5 +84,6 @@ public class GetFilesRequest extends ApiRequest {
         }
       });
     }
+
   }
 }

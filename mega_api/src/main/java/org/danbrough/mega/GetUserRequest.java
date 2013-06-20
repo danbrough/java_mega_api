@@ -7,6 +7,8 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import com.google.gson.JsonObject;
+
 public class GetUserRequest extends ApiRequest {
 
   // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -14,8 +16,8 @@ public class GetUserRequest extends ApiRequest {
 
   public GetUserRequest(MegaAPI megaAPI) {
     super(megaAPI);
-
-    getRequestData().addProperty("a", "ug");
+    requestData = new JsonObject();
+    requestData.addProperty("a", "ug");
 
   }
 }

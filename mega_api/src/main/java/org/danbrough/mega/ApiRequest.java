@@ -42,6 +42,7 @@ public class ApiRequest extends Callback {
 
   // The upload file packet is out of range or not starting and ending on a
   // chunk boundary.
+
   public static final int ERANGE = -7;
   // The upload target URL you are trying to access has expired. Please request
   // a fresh one.
@@ -78,31 +79,30 @@ public class ApiRequest extends Callback {
   // Resource temporarily not available, please try again later
   public static final int ETEMPUNAVAIL = -18;
 
+  private static int idSequence = (int) Math.ceil((Math.random() * 1000000000));
+
   protected static Crypto crypto = new Crypto();
 
-  private final int requestId;
-  private final JsonObject requestData = new JsonObject();
+  private final int requestId = ++idSequence;
+  protected JsonObject requestData;
 
   protected final MegaAPI megaAPI;
+  private int retryTime = 0;
 
   public ApiRequest(MegaAPI megaAPI) {
     this.megaAPI = megaAPI;
-    this.requestId = megaAPI.getNextRequestID();
   }
 
-  public final JsonObject getRequestData() {
+  public int getRequestId() {
+    return requestId;
+  }
+
+  public JsonObject getRequestData() {
     return requestData;
   }
 
-  public String getURL() {
-    String url = MegaProperties.getInstance().getApiPath() + "cs?id="
-        + requestId;
-    UserContext ctx = megaAPI.getUserContext();
-    if (ctx != null && ctx.getSid() != null) {
-      url += "&sid=" + ctx.getSid();
-    }
-
-    return url;
+  public String getRequestParams() {
+    return null;
   }
 
   protected final UserContext getUserContext() {
@@ -127,4 +127,30 @@ public class ApiRequest extends Callback {
   public ApiRequest send() {
     return megaAPI.sendRequest(this);
   }
+
+  final void setResponse(JsonElement o) {
+    try {
+      if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
+        JsonElement element = o.getAsJsonArray().get(0);
+        if (element.isJsonPrimitive()) {
+          onError(element.getAsInt());
+        } else {
+          onResponse(element);
+        }
+      } else {
+        onResponse(o);
+      }
+    } catch (Exception e) {
+      onError(e);
+    }
+  }
+
+  public int getRetryTime() {
+    return retryTime;
+  }
+
+  public void setRetryTime(int retryTime) {
+    this.retryTime = retryTime;
+  }
+
 }

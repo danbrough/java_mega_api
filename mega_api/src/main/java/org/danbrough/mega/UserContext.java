@@ -37,6 +37,8 @@ public class UserContext {
 
   private String handle;
 
+  private String sn = "";
+
   protected UserContext() {
     super();
   }
@@ -123,5 +125,13 @@ public class UserContext {
 
   public String getHandle() {
     return handle;
+  }
+
+  public void setSn(String sn) {
+    this.sn = sn;
+  }
+
+  public String getSn() {
+    return sn;
   }
 }

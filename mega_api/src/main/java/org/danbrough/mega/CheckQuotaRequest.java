@@ -19,7 +19,7 @@ public class CheckQuotaRequest extends ApiRequest {
 
   public CheckQuotaRequest(MegaAPI megaAPI) {
     super(megaAPI);
-    JsonObject requestData = getRequestData();
+    requestData = new JsonObject();
     requestData.addProperty("a", "uq");
     requestData.addProperty("xfer", 1);
     requestData.addProperty("pro", 1);
