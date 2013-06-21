@@ -12,6 +12,7 @@ import org.danbrough.mega.MegaAPI;
 import org.danbrough.mega.UserContext;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
@@ -24,6 +25,7 @@ public class TestApplication {
   private Context appContext;
   MegaAPI mega;
   private static TestApplication INSTANCE;
+  private static final String PREF_USER_CONTEXT = "userContext";
 
   public TestApplication() {
     super();
@@ -37,9 +39,9 @@ public class TestApplication {
     mega = new MegaAPI();
     mega.start();
 
-    if (getPrefs().contains("userContext")) {
+    if (getPrefs().contains(PREF_USER_CONTEXT)) {
       mega.createUserContext(new JsonParser().parse(
-          getPrefs().getString("userContext", null)).getAsJsonObject());
+          getPrefs().getString(PREF_USER_CONTEXT, null)).getAsJsonObject());
     }
 
   }
@@ -50,10 +52,14 @@ public class TestApplication {
 
   public void saveUserContext() {
     UserContext ctx = mega.getUserContext();
-
     String s = Crypto.getInstance().toJSON(ctx).toString();
     log.debug("saving userContext: {}", s);
-    getPrefs().edit().putString("userContext", s).commit();
+    getPrefs().edit().putString(PREF_USER_CONTEXT, s).commit();
+  }
+
+  public void logout(TestActivity activity) {
+    getPrefs().edit().remove(PREF_USER_CONTEXT).commit();
+    activity.startActivity(new Intent(appContext, LoginActivity.class));
   }
 
   public void stop() {

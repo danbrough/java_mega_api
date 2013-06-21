@@ -12,4 +12,16 @@
         android:layout_height="wrap_content"
         android:text="Get Files" />
 
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Logout" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="startPoll"
+        android:text="Poll" />
+
 </LinearLayout>

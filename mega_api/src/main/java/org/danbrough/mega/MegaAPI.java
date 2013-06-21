@@ -8,6 +8,7 @@
 package org.danbrough.mega;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Random;
@@ -48,6 +49,7 @@ public class MegaAPI {
   protected final Crypto crypto;
   protected final Transport transport;
   private UserContext user;
+  private final Random random;
 
   protected final ThreadPool threadPool;
 
@@ -56,6 +58,11 @@ public class MegaAPI {
     this.crypto = createCrypto();
     this.threadPool = createThreadPool();
     this.transport = createTransport(threadPool);
+    random = new Random();
+  }
+
+  public Random getRandom() {
+    return random;
   }
 
   public UserContext createUserContext(String email, String password) {
@@ -426,6 +433,11 @@ public class MegaAPI {
       }
     }
     return visitor.visit(file);
+  }
+
+  public void upload(File file, String destDir, String fileName) {
+    log.info("upload() {}", file);
+
   }
 
 }

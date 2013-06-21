@@ -7,16 +7,12 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import com.google.gson.JsonObject;
+public class WaitRequest extends ApiRequest {
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
+      .getLogger(WaitRequest.class.getSimpleName());
 
-public class GetUserRequest extends ApiRequest {
-
-  // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-  // .getLogger(GetUserRequest.class.getSimpleName());
-
-  public GetUserRequest(MegaAPI megaAPI) {
-    super(megaAPI);
-    requestData = new JsonObject();
-    requestData.addProperty("a", "ug");
+  public WaitRequest(MegaAPI megaApi) {
+    super(megaApi);
   }
+
 }

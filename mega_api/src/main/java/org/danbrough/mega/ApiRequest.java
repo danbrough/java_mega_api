@@ -7,10 +7,12 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import java.util.concurrent.TimeUnit;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-public class ApiRequest extends Callback {
+public class ApiRequest implements Callback {
 
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(ApiRequest.class.getSimpleName());
@@ -105,18 +107,57 @@ public class ApiRequest extends Callback {
     return null;
   }
 
+  public String getRequestURL() {
+    String url = MegaProperties.getInstance().getApiPath();
+    JsonObject payload = getRequestData();
+    if (payload != null) {
+      url += "cs?id=" + getRequestId();
+      String sid = getUserContext().getSid();
+      if (sid != null)
+        url += "&sid=" + sid;
+    } else {
+      // sc request
+      String params = getRequestParams();
+      if (params == null) {
+        log.error("Neither request data or request params available");
+        return null;
+      }
+      url += params;
+    }
+    return url;
+  }
+
   protected final UserContext getUserContext() {
     return megaAPI.getUserContext();
   }
 
   @Override
-  public void onError(int code) {
+  public final void onError(int code) {
     log.error("onError() code: " + code);
+
+    if (code == ApiRequest.EAGAIN) {
+
+      retryTime = retryTime == 0 ? 125 : 2 * retryTime;
+
+      log.warn("EAGAIN: " + retryTime);
+      megaAPI.getThreadPool().background(new Runnable() {
+
+        @Override
+        public void run() {
+          send();
+        }
+      }, retryTime, TimeUnit.MILLISECONDS);
+    } else {
+      processOnError(code);
+    }
+  }
+
+  protected void processOnError(int code) {
   }
 
   @Override
   public void onError(Exception exception) {
-    log.error("onError()", exception);
+    log.error(exception.getMessage(), exception);
   }
 
   @Override
@@ -124,33 +165,8 @@ public class ApiRequest extends Callback {
     log.debug("onResponse() {}", crypto.toPrettyString(o));
   }
 
-  public ApiRequest send() {
-    return megaAPI.sendRequest(this);
-  }
-
-  final void setResponse(JsonElement o) {
-    try {
-      if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
-        JsonElement element = o.getAsJsonArray().get(0);
-        if (element.isJsonPrimitive()) {
-          onError(element.getAsInt());
-        } else {
-          onResponse(element);
-        }
-      } else {
-        onResponse(o);
-      }
-    } catch (Exception e) {
-      onError(e);
-    }
-  }
-
-  public int getRetryTime() {
-    return retryTime;
-  }
-
-  public void setRetryTime(int retryTime) {
-    this.retryTime = retryTime;
+  public void send() {
+    megaAPI.sendRequest(this);
   }
 
 }

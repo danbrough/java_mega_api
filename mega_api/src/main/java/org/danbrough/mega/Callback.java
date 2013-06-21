@@ -9,19 +9,11 @@ package org.danbrough.mega;
 
 import com.google.gson.JsonElement;
 
-public class Callback {
-  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(Callback.class.getSimpleName());
+public interface Callback {
 
-  public void onError(int code) {
-    log.error("onError() code: " + code);
-  }
+  void onError(int code);
 
-  public void onError(Exception exception) {
-    log.error("onError()", exception);
-  }
+  void onError(Exception exception);
 
-  public void onResponse(JsonElement o) {
-    log.debug("onResponse() {}", o);
-  }
+  void onResponse(JsonElement o);
 }

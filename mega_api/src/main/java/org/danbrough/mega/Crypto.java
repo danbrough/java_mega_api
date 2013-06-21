@@ -358,4 +358,140 @@ public class Crypto {
   public <T> T fromJSON(JsonObject o, Class<T> cls) {
     return new Gson().fromJson(o, cls);
   }
+
+  // ul_aes = new sjcl.cipher.aes([ul_key[0],ul_key[1],ul_key[2],ul_key[3]]);
+  // for (var p in ul_plainq)
+  // {
+  // ul_macs[p] = encrypt_ab_ctr(ul_aes,ul_plainq[p],[ul_key[4],ul_key[5]],p);
+  //
+  // ul_sendchunks[p] = ul_plainq[p];
+  //
+  // delete ul_plainq[p];
+  // }
+
+  public byte[] encrypt_ab_ctr(Cipher aes, byte ab[], byte nonce[], int pos) {
+    return null;
+  }
+
+  // //encrypt ArrayBuffer in CTR mode, return MAC
+  // function encrypt_ab_ctr(aes,ab,nonce,pos)
+  // {
+  // var ctr = [nonce[0],nonce[1],(pos/0x1000000000) >>> 0,(pos/0x10) >>> 0];
+  // var mac = [ctr[0],ctr[1],ctr[0],ctr[1]];
+  //
+  // var enc, i, j, len, v;
+  //
+  // if (have_ab)
+  // {
+  // var data0, data1, data2, data3;
+  //
+  // len = ab.buffer.byteLength-16;
+  //
+  // var v = new DataView(ab.buffer);
+  //
+  // for (i = 0; i < len; i += 16)
+  // {
+  // data0 = v.getUint32(i,false);
+  // data1 = v.getUint32(i+4,false);
+  // data2 = v.getUint32(i+8,false);
+  // data3 = v.getUint32(i+12,false);
+  //
+  // // compute MAC
+  // mac[0] ^= data0;
+  // mac[1] ^= data1;
+  // mac[2] ^= data2;
+  // mac[3] ^= data3;
+  // mac = aes.encrypt(mac);
+  //
+  // // encrypt using CTR
+  // enc = aes.encrypt(ctr);
+  // v.setUint32(i,data0 ^ enc[0],false);
+  // v.setUint32(i+4,data1 ^ enc[1],false);
+  // v.setUint32(i+8,data2 ^ enc[2],false);
+  // v.setUint32(i+12,data3 ^ enc[3],false);
+  //
+  // if (!(++ctr[3])) ctr[2]++;
+  // }
+  //
+  // if (i < ab.buffer.byteLength)
+  // {
+  // var fullbuf = new Uint8Array(ab.buffer);
+  // var tmpbuf = new ArrayBuffer(16);
+  // var tmparray = new Uint8Array(tmpbuf);
+  //
+  // tmparray.set(fullbuf.subarray(i));
+  //
+  // v = new DataView(tmpbuf);
+  //
+  // enc = aes.encrypt(ctr);
+  //
+  // data0 = v.getUint32(0,false);
+  // data1 = v.getUint32(4,false);
+  // data2 = v.getUint32(8,false);
+  // data3 = v.getUint32(12,false);
+  //
+  // mac[0] ^= data0;
+  // mac[1] ^= data1;
+  // mac[2] ^= data2;
+  // mac[3] ^= data3;
+  // mac = aes.encrypt(mac);
+  //
+  // enc = aes.encrypt(ctr);
+  // v.setUint32(0,data0 ^ enc[0],false);
+  // v.setUint32(4,data1 ^ enc[1],false);
+  // v.setUint32(8,data2 ^ enc[2],false);
+  // v.setUint32(12,data3 ^ enc[3],false);
+  //
+  // fullbuf.set(tmparray.subarray(0,j = fullbuf.length-i),i);
+  // }
+  // }
+  // else
+  // {
+  // var ab32 = _str_to_a32(ab.buffer);
+  //
+  // len = ab32.length-3;
+  //
+  // for (i = 0; i < len; i += 4)
+  // {
+  // mac[0] ^= ab32[i];
+  // mac[1] ^= ab32[i+1];
+  // mac[2] ^= ab32[i+2];
+  // mac[3] ^= ab32[i+3];
+  // mac = aes.encrypt(mac);
+  //
+  // enc = aes.encrypt(ctr);
+  // ab32[i] ^= enc[0];
+  // ab32[i+1] ^= enc[1];
+  // ab32[i+2] ^= enc[2];
+  // ab32[i+3] ^= enc[3];
+  //
+  // if (!(++ctr[3])) ctr[2]++;
+  // }
+  //
+  // if (i < ab32.length)
+  // {
+  // var v = [0,0,0,0];
+  //
+  // for (j = i; j < ab32.length; j++) v[j-i] = ab32[j];
+  //
+  // mac[0] ^= v[0];
+  // mac[1] ^= v[1];
+  // mac[2] ^= v[2];
+  // mac[3] ^= v[3];
+  // mac = aes.encrypt(mac);
+  //
+  // enc = aes.encrypt(ctr);
+  // v[0] ^= enc[0];
+  // v[1] ^= enc[1];
+  // v[2] ^= enc[2];
+  // v[3] ^= enc[3];
+  //
+  // for (j = i; j < ab32.length; j++) ab32[j] = v[j-i];
+  // }
+  //
+  // ab.buffer = _a32_to_str(ab32,ab.buffer.length);
+  // }
+  //
+  // return mac;
+  // }
 }

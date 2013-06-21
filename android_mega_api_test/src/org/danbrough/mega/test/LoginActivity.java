@@ -4,6 +4,7 @@ import org.danbrough.mega.LoginRequest;
 import org.danbrough.mega.MegaAPI;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
@@ -63,6 +64,7 @@ public class LoginActivity extends Activity {
         public void onResponse(JsonElement response) {
           super.onResponse(response);
           TestApplication.getInstance().saveUserContext();
+          startActivity(new Intent(getApplicationContext(), TestActivity.class));
         };
 
       }.send();

@@ -37,7 +37,7 @@ public class UserContext {
 
   private String handle;
 
-  private String sn = "";
+  private transient String sn;
 
   protected UserContext() {
     super();
