@@ -38,10 +38,23 @@ public class MegaFile implements Serializable {
   private String key;
   private JsonObject attrs;
   private String name;
+  private String owner;
 
   public MegaFile(String handle) {
     super();
     this.handle = handle;
+  }
+
+  public boolean isFile() {
+    return type == TYPE_FILE;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(String owner) {
+    this.owner = owner;
   }
 
   public int getType() {
