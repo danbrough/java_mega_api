@@ -17,12 +17,14 @@ public class MegaProperties {
 
   String userAgent;
   String defaultApiPath;
+  String defaultFilePath;
 
   private MegaProperties() {
     ResourceBundle props = ResourceBundle.getBundle(MegaProperties.class
         .getCanonicalName());
     userAgent = props.getString("userAgent");
     defaultApiPath = props.getString("defaultApiPath");
+    defaultFilePath = props.getString("defaultFilePath");
   }
 
   public static MegaProperties getInstance() {
@@ -35,6 +37,10 @@ public class MegaProperties {
 
   public String getUserAgent() {
     return userAgent;
+  }
+
+  public String getDefaultFilePath() {
+    return defaultFilePath;
   }
 
 }

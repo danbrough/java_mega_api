@@ -40,6 +40,8 @@ public class MegaFile implements Serializable {
   private String name;
   private String owner;
 
+  private String decodedKey;
+
   public MegaFile(String handle) {
     super();
     this.handle = handle;
@@ -107,5 +109,13 @@ public class MegaFile implements Serializable {
 
   public String getName() {
     return this.name;
+  }
+
+  public void setDecodedKey(String key) {
+    this.decodedKey = key;
+  }
+
+  public String getDecodedKey() {
+    return decodedKey;
   }
 }

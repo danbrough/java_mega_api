@@ -90,7 +90,7 @@ public class LoginRequest extends ApiRequest {
     BigInteger encrypted_sid = crypto.mpi2big(crypto.base64urldecode(response
         .get("csid").getAsString()));
 
-    BigInteger bResult = crypto.RSAdecrypt(encrypted_sid, rsa_private_key[2],
+    BigInteger bResult = crypto.rsaDecrypt(encrypted_sid, rsa_private_key[2],
         rsa_private_key[0], rsa_private_key[1], rsa_private_key[3]);
     String sResult = crypto.bigToString(bResult);
 

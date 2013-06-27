@@ -175,7 +175,14 @@ public class Transport {
       if (o.isJsonArray() && o.getAsJsonArray().size() == 1) {
         JsonElement element = o.getAsJsonArray().get(0);
         if (element.isJsonPrimitive()) {
-          callback.onError(element.getAsInt());
+          String s = element.getAsString();
+          try {
+            int i = Integer.parseInt(s);
+            callback.onError(i);
+          } catch (NumberFormatException ex) {
+            callback.onResponse(element);
+          }
+
         } else {
           callback.onResponse(element);
         }

@@ -8,6 +8,7 @@
 package org.danbrough.mega;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -307,33 +308,25 @@ public class Crypto {
     return process_key(a, key, Cipher.ENCRYPT_MODE);
   }
 
-  public BigInteger RSAdecrypt(BigInteger m, BigInteger d, BigInteger p,
+  public BigInteger rsaDecrypt(BigInteger m, BigInteger d, BigInteger p,
       BigInteger q, BigInteger u) {
-    // var xp = bmodexp(bmod(m,p), bmod(d,bsub(p,[1])), p);
+
     BigInteger xp = m.mod(p).modPow(d.mod(p.subtract(BigInteger.ONE)), p);
-    // var xq = bmodexp(bmod(m,q), bmod(d,bsub(q,[1])), q);
+
     BigInteger xq = m.mod(q).modPow(d.mod(q.subtract(BigInteger.ONE)), q);
 
-    // var t=bsub(xq,xp);
     BigInteger t = xq.subtract(xq);
 
-    // if(t.length==0)
     if (t.equals(BigInteger.ZERO)) {
-      // {
-      // t=bsub(xp,xq);
+
       t = xp.subtract(xq);
-      // t=bmod(bmul(t, u), q);
       t = t.multiply(u).mod(q);
 
-      // t=bsub(q,t);
       t = q.subtract(t);
-      // }
     } else {
-      // t=bmod(bmul(t, u), q);
       t = t.multiply(u).mod(q);
     }
 
-    // return badd(bmul(t,p), xp);
     return t.multiply(p).add(xp);
   }
 
@@ -357,6 +350,10 @@ public class Crypto {
 
   public <T> T fromJSON(JsonObject o, Class<T> cls) {
     return new Gson().fromJson(o, cls);
+  }
+
+  public <T> T fromJSON(Reader input, Class<T> cls) {
+    return new Gson().fromJson(input, cls);
   }
 
   // ul_aes = new sjcl.cipher.aes([ul_key[0],ul_key[1],ul_key[2],ul_key[3]]);

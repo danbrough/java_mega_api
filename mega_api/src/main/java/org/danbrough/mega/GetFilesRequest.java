@@ -9,12 +9,13 @@ package org.danbrough.mega;
 
 import org.danbrough.mega.MegaAPI.FilesVisitor;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class GetFilesRequest extends ApiRequest {
+public class GetFilesRequest extends ApiRequest implements FilesVisitor {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(GetFilesRequest.class.getSimpleName());
 
@@ -82,13 +83,7 @@ public class GetFilesRequest extends ApiRequest {
     //
 
     if (o.has("f")) {
-      processFiles(o.get("f").getAsJsonArray(), new FilesVisitor() {
-        @Override
-        public boolean visit(MegaFile file) {
-          log.debug("visited {}", file);
-          return true;
-        }
-      });
+      processFiles(o.get("f").getAsJsonArray(), this);
     }
 
   }
@@ -213,7 +208,7 @@ public class GetFilesRequest extends ApiRequest {
   }
 
   private void decodeAttributes(MegaFile file, String key, String attrs) {
-    log.trace("key {}", key);
+    log.trace("decodeAttributes() key: {}", key);
 
     if (key.length() < 46) {
       log.trace("short key aes");
@@ -227,6 +222,10 @@ public class GetFilesRequest extends ApiRequest {
 
       dec_key = crypto.decrypt_key(dec_key, user.getMasterKey());
 
+      log.trace("key is now: {}", crypto.base64urlencode(dec_key));
+
+      file.setDecodedKey(crypto.base64urlencode(dec_key));
+
       if (file.getType() == MegaFile.TYPE_FILE) {
         // int a32Key[] = crypto.bytes_to_a32(dec_key);
         // int newkey[] = { a32Key[0] ^ a32Key[4], a32Key[1] ^ a32Key[5],
@@ -238,8 +237,10 @@ public class GetFilesRequest extends ApiRequest {
         }
         dec_key = new_key;
       }
+      log.trace("key is now2: {}", crypto.base64urlencode(dec_key));
 
       attrs = crypto.decrypt_attrs(attrs, dec_key);
+
       if (attrs.startsWith("MEGA{")) {
         attrs = attrs.substring(4);
         file.setAttributes(new JsonParser().parse(attrs).getAsJsonObject());
@@ -255,5 +256,11 @@ public class GetFilesRequest extends ApiRequest {
       // long keys rsa
       log.error("long key rsa NOT IMPLEMENTED!");
     }
+  }
+
+  @Override
+  public boolean visit(MegaFile file) {
+    log.debug("visited {}", new Gson().toJson(file));
+    return true;
   }
 }
