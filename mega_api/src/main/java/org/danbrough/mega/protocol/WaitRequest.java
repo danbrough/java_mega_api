@@ -5,24 +5,17 @@
  * and is available at http://www.gnu.org/licenses/gpl.html
  * 
  ******************************************************************************/
-package org.danbrough.mega;
+package org.danbrough.mega.protocol;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
+import org.danbrough.mega.ApiRequest;
+import org.danbrough.mega.MegaAPI;
 
-public class AndroidMegaAPI extends MegaAPI {
+public class WaitRequest extends ApiRequest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(AndroidMegaAPI.class.getSimpleName());
-  
-  private Context appContext;
-  
-  public AndroidMegaAPI(Context appContext) {
-    super();
-    this.appContext = appContext;
+      .getLogger(WaitRequest.class.getSimpleName());
+
+  public WaitRequest(MegaAPI megaApi) {
+    super(megaApi);
   }
 
-  public void test(){
-//    PreferenceManager.getDefaultSharedPreferences(appContext).
-  }
 }

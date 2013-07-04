@@ -1,5 +1,12 @@
 <resources>
 
     <string name="app_name">Android Mega API</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="cancel">Cancel</string>
+    <string name="please_wait">Please Wait</string>
+    <string name="an_error_occurred">An error occurred</string>
 
 </resources>

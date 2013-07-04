@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">AndroidMegaApiTest</string>
-    <string name="action_settings">Settings</string>
-    <string name="username">Username</string>
-    <string name="password">Password</string>
-    <string name="login">Login</string>
-    
-    
+    <string name="app_name">Mega-Api Test</string>
+
 </resources>

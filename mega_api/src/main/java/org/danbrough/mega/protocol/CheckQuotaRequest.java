@@ -5,10 +5,12 @@
  * and is available at http://www.gnu.org/licenses/gpl.html
  * 
  ******************************************************************************/
-package org.danbrough.mega;
+package org.danbrough.mega.protocol;
 
 import java.util.Locale;
 
+import org.danbrough.mega.ApiRequest;
+import org.danbrough.mega.MegaAPI;
 import org.danbrough.mega.MegaAPI.ProtocolException;
 
 import com.google.gson.JsonElement;

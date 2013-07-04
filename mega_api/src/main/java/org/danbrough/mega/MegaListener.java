@@ -7,12 +7,11 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-public class WaitRequest extends ApiRequest {
-  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(WaitRequest.class.getSimpleName());
+import com.google.gson.JsonElement;
 
-  public WaitRequest(MegaAPI megaApi) {
-    super(megaApi);
-  }
+public interface MegaListener {
 
+  void onFilesModified(JsonElement o);
+
+  void onLoggedOut();
 }

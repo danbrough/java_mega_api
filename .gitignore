@@ -2,6 +2,10 @@
 */gen/*
 *.pydevproject
 /android_mega_api/examples
+/android_mega_api_test/bin
+/android_mega_api_test/gen
+/android_mega_api/bin
+/android_mega_api/gen
 /mega_api/target/
 /mega_api/docs/
 /mega_api/src/test/

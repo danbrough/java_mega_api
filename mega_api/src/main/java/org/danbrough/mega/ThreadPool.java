@@ -7,39 +7,16 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+
 import java.util.concurrent.TimeUnit;
 
-public class ThreadPool {
+public interface ThreadPool {
 
-  ScheduledExecutorService pool;
-  boolean running = false;
+  void start();
 
-  public synchronized void start() {
-    if (running)
-      return;
-    running = true;
-    pool = Executors.newScheduledThreadPool(2);
-  }
+  void stop();
 
-  public synchronized void stop() {
-    if (!running)
-      return;
-    running = false;
-    pool.shutdownNow();
-    pool = null;
-  }
+  void background(Runnable job);
 
-  public void background(Runnable job) {
-    if (!running)
-      return;
-    pool.execute(job);
-  }
-
-  public void background(Runnable callable, long delay, TimeUnit unit) {
-    if (!running)
-      return;
-    pool.schedule(callable, delay, unit);
-  }
+  void background(Runnable callable, long delay, TimeUnit unit);
 }

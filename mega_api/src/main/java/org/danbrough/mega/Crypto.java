@@ -238,7 +238,7 @@ public class Crypto {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
   }
 
-  public Cipher createCipherCTR(byte key[], int mode, byte iv[] ) {
+  public Cipher createCipherCTR(byte key[], int mode, byte iv[]) {
     try {
 
       IvParameterSpec ivSpec = new IvParameterSpec(iv);
@@ -253,7 +253,7 @@ public class Crypto {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    
+
   }
 
   public Cipher createCipher(String transformation, byte key[], int mode,
@@ -274,7 +274,7 @@ public class Crypto {
     }
   }
 
-  protected String crypto_handleauth(String h, UserContext ctx) {
+  public String crypto_handleauth(String h, UserContext ctx) {
     // return a32_to_base64(encrypt_key(u_k_aes,str_to_a32(h+h)));
 
     try {

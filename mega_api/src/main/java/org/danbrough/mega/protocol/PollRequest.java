@@ -5,9 +5,15 @@
  * and is available at http://www.gnu.org/licenses/gpl.html
  * 
  ******************************************************************************/
-package org.danbrough.mega;
+package org.danbrough.mega.protocol;
 
 import java.util.concurrent.TimeUnit;
+
+import org.danbrough.mega.ApiRequest;
+import org.danbrough.mega.MegaAPI;
+import org.danbrough.mega.MegaListener;
+import org.danbrough.mega.UserContext;
+import org.danbrough.mega.MegaAPI.ProtocolException;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -19,6 +25,7 @@ public class PollRequest extends ApiRequest {
 
   int waitbackoff = 125;
   String waitUrl;
+  boolean polling = true;
 
   public PollRequest(MegaAPI megaApi) {
     super(megaApi);
@@ -121,6 +128,9 @@ public class PollRequest extends ApiRequest {
   }
 
   void execsc(JsonElement a) {
+    MegaListener listener = megaAPI.getListener();
+    if (listener != null)
+      listener.onFilesModified(a);
     if (a.isJsonArray()) {
       processA(a.getAsJsonArray());
     } else {
@@ -202,7 +212,8 @@ public class PollRequest extends ApiRequest {
     log.debug("processPacket() {}", o);
 
     if (!o.has("a")) {
-      log.error("NNNNNNNNNNNNNNOOOOOOOOOOO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+      log.error("NNNNNNNNNNNNNNOOOOOOOOOOO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA: "
+          + o.get("a"));
       return;
     }
     String a = o.get("a").getAsString();

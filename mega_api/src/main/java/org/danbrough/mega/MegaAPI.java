@@ -42,7 +42,6 @@ public class MegaAPI {
     public JsonElement getData() {
       return data;
     }
-
   }
 
   protected final Crypto crypto;
@@ -51,6 +50,7 @@ public class MegaAPI {
   private final Random random;
 
   protected final ThreadPool threadPool;
+  MegaListener listener;
 
   public MegaAPI() {
     super();
@@ -58,6 +58,14 @@ public class MegaAPI {
     this.threadPool = createThreadPool();
     this.transport = createTransport(threadPool);
     random = new Random();
+  }
+
+  public void setListener(MegaListener listener) {
+    this.listener = listener;
+  }
+
+  public MegaListener getListener() {
+    return listener;
   }
 
   public Random getRandom() {
@@ -94,7 +102,7 @@ public class MegaAPI {
   }
 
   protected ThreadPool createThreadPool() {
-    return new ThreadPool();
+    return new ExecutorThreadPool();
   }
 
   protected Transport createTransport(ThreadPool pool) {
@@ -135,102 +143,6 @@ public class MegaAPI {
   protected ApiRequest sendRequest(ApiRequest request) {
     transport.queueRequest(request);
     return request;
-  }
-
-  protected void process_u(JsonArray a) {
-    log.info("process_u() {}", a);
-
-    for (int i = 0; i < a.size(); i++) {
-      JsonObject o = a.get(i).getAsJsonObject();
-
-      int c = o.get("c").getAsInt();
-      String email = o.get("m").getAsString();
-      String u = o.get("u").getAsString();
-      log.debug("c " + c + " email: " + email + " u: " + u);
-
-      if ((c == 1) && !u.equals(user.getHandle())) {
-        // add this as a contact
-      } else if (c == 0) {
-        // delete this contact
-      } else if (c == 2) {
-        // this is the current user
-        user.setHandle(u);
-      }
-    }
-
-  }
-
-  /**
-   * For each item in "ok", if ((item.h + item.h) decrypted with the master key)
-   * equals item.ha then put shared_keys[item.h] = (k decrypted with master key)
-   * 
-   * if (ok[i].ha == crypto_handleauth(ok[i].h)) u_sharekeys[ok[i].h] =
-   * decrypt_key(u_k_aes,base64_to_a32(ok[i].k));
-   */
-  protected void process_ok(JsonArray ok) {
-    log.info("process_ok()");
-    log.debug("ok: {}", ok.toString());
-
-    // "ok": [{
-    // "h": "p08S2LyJ",
-    // "ha": "_jQmHRNgfI_4CaQmuUE3ig",
-    // "k": "rLH91zslsr2Y2MfRIREFKw"
-    // }],
-
-    for (int i = 0; i < ok.size(); i++) {
-      JsonObject o = ok.get(i).getAsJsonObject();
-      String ha = o.get("ha").getAsString();
-      String h = o.get("h").getAsString();
-      String k = o.get("k").getAsString();
-
-      log.debug("ha: " + ha + " h: " + h + " k: " + k);
-      // crypto_handleauth('p08S2LyJ') should be "_jQmHRNgfI_4CaQmuUE3ig"
-      String s = crypto.crypto_handleauth(h, user);
-
-      // if (ok[i].ha == crypto_handleauth(ok[i].h)) u_sharekeys[ok[i].h] =
-      // decrypt_key(u_k_aes,base64_to_a32(ok[i].k));
-
-      if (ha.equals(s)) {
-        byte decKey[] = crypto.decrypt_key(user.getMasterKey(),
-            crypto.base64urldecode(k));
-        user.getSharedKeys().put(h, decKey);
-        log.debug("added sharedkey: {}", h);
-      }
-    }
-  }
-
-  public void process_s(JsonArray s) {
-    log.info("process_s() {}", s);
-    // for(i in json.s)
-    for (int i = 0; i < s.size(); i++) {
-      JsonObject item = s.get(i).getAsJsonObject();
-
-      // {
-      // if (u_sharekeys[json.s[i].h])
-      // {
-      // sharingData.push(
-      // {
-      // id: json.s[i].h + '_' + json.s[i].u,
-      // userid: json.s[i].u,
-      // folderid: json.s[i].h,
-      // rights: json.s[i].r,
-      // date: json.s[i].ts
-      // });
-      // sharednodes[json.s[i].h]=true;
-      // }
-      // }
-      //
-
-      String h = item.get("h").getAsString();
-      if (getUserContext().getSharedKeys().containsKey(h)) {
-        log.debug("u_sharekeys[json.s[i].h] is true i: " + i + " h: {}", h);
-        log.debug("id: " + (h + h) + " userid: " + item.get("u").getAsString()
-            + " folderid: " + item.get("h").getAsString() + " rights: "
-            + item.get("r").getAsInt());
-        // sharednodes[json.s[i].h]=true;
-      }
-
-    }
   }
 
   private String makeid(int len) {
@@ -285,6 +197,16 @@ public class MegaAPI {
   public void upload(File file, String destDir, String fileName) {
     log.info("upload() {}", file);
 
+  }
+
+  public void logout() {
+    user = null;
+    if (listener != null)
+      listener.onLoggedOut();
+  }
+
+  public boolean isLoggedIn() {
+    return user != null;
   }
 
 }
