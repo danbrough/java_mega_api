@@ -7,6 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega.test;
 
+import org.danbrough.mega.AndroidMegaAPI;
 import org.danbrough.mega.Crypto;
 import org.danbrough.mega.MegaAPI;
 import org.danbrough.mega.UserContext;
@@ -36,7 +37,7 @@ public class TestApplication {
     this.appContext = context;
     if (mega != null)
       return;
-    mega = new MegaAPI();
+    mega = new AndroidMegaAPI(context);
     mega.start();
 
     if (getPrefs().contains(PREF_USER_CONTEXT)) {

@@ -116,6 +116,8 @@ public class Transport {
           public void run() {
             try {
               postRequest(req);
+            } catch (Exception ex) {
+              req.onError(ex);
             } finally {
               synchronized (requestQueue) {
                 requestCount--;

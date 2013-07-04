@@ -7,26 +7,22 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import com.google.gson.JsonObject;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
-public class DownloadRequest extends ApiRequest {
+public class AndroidMegaAPI extends MegaAPI {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(DownloadRequest.class.getSimpleName());
-
-  private final MegaFile file;
-
-  public DownloadRequest(MegaAPI megaAPI, MegaFile file) {
-    super(megaAPI);
-    this.file = file;
+      .getLogger(AndroidMegaAPI.class.getSimpleName());
+  
+  private Context appContext;
+  
+  public AndroidMegaAPI(Context appContext) {
+    super();
+    this.appContext = appContext;
   }
 
-  @Override
-  public JsonObject getRequestData() {
-    requestData = new JsonObject();
-
-    // dl_keyNonce =
-    // JSON.stringify([dl_key[0]^dl_key[4],dl_key[1]^dl_key[5],dl_key[2]^dl_key[6],dl_key[3]^dl_key[7],dl_key[4],dl_key[5]]);
-
-    return requestData;
+  public void test(){
+//    PreferenceManager.getDefaultSharedPreferences(appContext).
   }
 }

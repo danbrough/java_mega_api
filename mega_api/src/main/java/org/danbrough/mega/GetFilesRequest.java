@@ -120,6 +120,9 @@ public class GetFilesRequest extends ApiRequest implements FilesVisitor {
 
     if ((t != 2) && (t != 3) && (t != 4)) {
       file.setKey(o.get("k").getAsString());
+      if (t == MegaFile.TYPE_FILE) {
+        file.setSize(o.get("s").getAsLong());
+      }
       processKey(file, o.get("a").getAsString());
     }
     // else
@@ -207,7 +210,7 @@ public class GetFilesRequest extends ApiRequest implements FilesVisitor {
 
   }
 
-  private void decodeAttributes(MegaFile file, String key, String attrs) {
+  public void decodeAttributes(MegaFile file, String key, String attrs) {
     log.trace("decodeAttributes() key: {}", key);
 
     if (key.length() < 46) {

@@ -45,15 +45,6 @@
         android:ems="10"
         android:inputType="textPassword" />
 
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/txtPassword"
-        android:layout_marginTop="18dp"
-        android:layout_toRightOf="@+id/textView1"
-        android:text="@string/test" />
-
     <TextView
         android:id="@+id/TextView02"
         android:layout_width="wrap_content"
@@ -62,5 +53,14 @@
         android:layout_marginTop="34dp"
         android:layout_toLeftOf="@+id/button1"
         android:text="@string/password" />
+
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/txtPassword"
+        android:layout_marginTop="18dp"
+        android:layout_toRightOf="@+id/textView1"
+        android:text="@string/login" />
 
 </RelativeLayout>

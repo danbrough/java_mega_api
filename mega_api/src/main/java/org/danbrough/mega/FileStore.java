@@ -7,26 +7,23 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import com.google.gson.JsonObject;
-
-public class DownloadRequest extends ApiRequest {
+public class FileStore {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(DownloadRequest.class.getSimpleName());
+      .getLogger(FileStore.class.getSimpleName());
+  
+  MegaAPI megaAPI;
 
-  private final MegaFile file;
-
-  public DownloadRequest(MegaAPI megaAPI, MegaFile file) {
-    super(megaAPI);
-    this.file = file;
+  public FileStore(MegaAPI megaAPI) {
+    super();
+    this.megaAPI = megaAPI;
+  }
+  
+  public void start(){
+    log.info("start()");
+  }
+  
+  public void stop(){
+    log.info("stop()");
   }
 
-  @Override
-  public JsonObject getRequestData() {
-    requestData = new JsonObject();
-
-    // dl_keyNonce =
-    // JSON.stringify([dl_key[0]^dl_key[4],dl_key[1]^dl_key[5],dl_key[2]^dl_key[6],dl_key[3]^dl_key[7],dl_key[4],dl_key[5]]);
-
-    return requestData;
-  }
 }

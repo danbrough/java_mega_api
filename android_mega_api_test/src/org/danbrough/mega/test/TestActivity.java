@@ -7,6 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega.test;
 
+import org.danbrough.mega.CheckQuotaRequest;
 import org.danbrough.mega.GetFilesRequest;
 import org.danbrough.mega.MegaAPI;
 import org.danbrough.mega.PollRequest;
@@ -53,6 +54,13 @@ public class TestActivity extends Activity {
         });
   }
 
+  @Override
+  protected void onStart() {
+    log.debug("onStart()");
+    super.onStart();
+
+  }
+
   @TargetApi(Build.VERSION_CODES.HONEYCOMB)
   private boolean onCreateOptionsMenu_11(Menu menu) {
     menu.add(Menu.NONE, MENU_LOGOUT, Menu.NONE, "Logout").setShowAsAction(
@@ -87,13 +95,24 @@ public class TestActivity extends Activity {
 
   private void getUserFiles() {
     log.debug("getUserFiles()");
-    MegaAPI mega = TestApplication.getInstance().getMega();
-    new GetFilesRequest(mega) {
-      @Override
-      public void onResponse(JsonElement obj) {
-        super.onResponse(obj);
-      }
-    }.send();
+    final MegaAPI mega = TestApplication.getInstance().getMega();
+//    new CheckQuotaRequest(mega) {
+//      @Override
+//      public void onResponse(JsonElement o) {
+//        log.info("WE ARE HERE2");
+//        try {
+//          super.onResponse(o);
+//          log.info("USAGE: {} gb QUOTA: {} gb", getUsage(Units.GB),
+//              getQuota(Units.GB));
+//          log.info("USAGE: {} mb QUOTA: {} mb", getUsage(Units.MB),
+//              getQuota(Units.MB));
+//        } catch (Throwable t) {
+//          log.error(t.getMessage(), t);
+//        }
+//
+//      }
+//    }.send();
+    new GetFilesRequest(mega).send();
   }
 
   public void startPoll(View view) {

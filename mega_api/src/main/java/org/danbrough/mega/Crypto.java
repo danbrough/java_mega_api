@@ -38,8 +38,6 @@ public class Crypto {
   public String decrypt_attrs(String attrs, byte key[]) {
 
     try {
-      // byte data[] = createCipher(key, Cipher.DECRYPT_MODE).doFinal(
-      // base64urldecode(attrs));
       byte data[] = createCipher(key, Cipher.DECRYPT_MODE).doFinal(
           base64urldecode(attrs));
       attrs = new String(data, ISO_8859_1);
@@ -236,13 +234,36 @@ public class Crypto {
   }
 
   public Cipher createCipher(byte key[], int mode) {
+    return createCipher("AES/CBC/NOPADDING", key, mode, new byte[] { 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+  }
+
+  public Cipher createCipherCTR(byte key[], int mode, byte iv[] ) {
     try {
 
-      IvParameterSpec ivSpec = new IvParameterSpec(new byte[] { 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+      IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
       SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
-      Cipher cipher = Cipher.getInstance("AES/CBC/NOPADDING");
+      Cipher cipher = Cipher.getInstance("AES/CTR/NOPADDING");
+      cipher.init(mode, keySpec, ivSpec);
+      return cipher;
+
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    
+  }
+
+  public Cipher createCipher(String transformation, byte key[], int mode,
+      byte iv[]) {
+    try {
+
+      IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
+      SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
+      Cipher cipher = Cipher.getInstance(transformation);
       cipher.init(mode, keySpec, ivSpec);
       return cipher;
 
