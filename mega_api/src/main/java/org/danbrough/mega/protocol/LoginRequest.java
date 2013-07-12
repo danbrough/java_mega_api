@@ -21,13 +21,11 @@ public class LoginRequest extends ApiRequest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(LoginRequest.class.getSimpleName());
 
-  UserContext ctx;
-
-  public LoginRequest(MegaAPI megaAPI) throws Exception {
+  public LoginRequest(MegaAPI megaAPI, String username, String password)
+      throws Exception {
     super(megaAPI);
 
-    ctx = getUserContext();
-
+    UserContext ctx = megaAPI.createUserContext(username, password);
     String uh = crypto.stringhash(ctx.getEmail(), ctx.getPasswordKey());
 
     requestData = new JsonObject();
@@ -54,10 +52,11 @@ public class LoginRequest extends ApiRequest {
     byte encrypted_master_key[] = crypto.base64urldecode(response.get("k")
         .getAsString());
 
-    byte master_key[] = crypto.decrypt_key(encrypted_master_key, megaAPI
-        .getUserContext().getPasswordKey());
+    UserContext ctx = getUserContext();
+    byte master_key[] = crypto.decrypt_key(encrypted_master_key,
+        ctx.getPasswordKey());
 
-    megaAPI.getUserContext().setMasterKey(master_key);
+    ctx.setMasterKey(master_key);
 
     byte encrypted_rsa_private_key[] = crypto.base64urldecode(response.get(
         "privk").getAsString());

@@ -7,6 +7,8 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import org.danbrough.mega.protocol.LoginRequest;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -26,6 +28,7 @@ public class MegaApplication {
 
   private MegaAPI megaAPI;
 
+  AlertDialog busyDialog;
   Activity activity;
   private final Context appContext;
 
@@ -35,16 +38,18 @@ public class MegaApplication {
     this.activity = activity;
     this.appContext = activity.getApplicationContext();
 
-    final AlertDialog dialog = createBusyDialog();
-    dialog.show();
+    showBusyDialog();
 
     megaAPI = new MegaAPI();
 
     new Thread() {
       @Override
       public void run() {
-        initialize();
-        dialog.cancel();
+        try {
+          initialize();
+        } finally {
+          hideBusyDialog();
+        }
       }
     }.start();
   }
@@ -68,25 +73,45 @@ public class MegaApplication {
   }
 
   public void saveUserContext() {
+    log.debug("saveUserContext()");
     UserContext ctx = megaAPI.getUserContext();
     String s = Crypto.getInstance().toJSON(ctx).toString();
-    log.debug("saving userContext: {}", s);
     getPrefs().edit().putString(PREF_USER_CONTEXT, s).commit();
   }
 
-  public void login(String username, String password) {
-    log.info("login() {}:{}", username, password);
-    displayError(new Exception("I like cheese"));
-    // try {
-    // new LoginRequest(megaAPI) {
-    //
-    // }.send();
-    // } catch (Exception e) {
-    // createErrorDialog(e).show();
-    // }
+  public void login(final String username, final String password) {
+    log.info("login() {}", username);
+
+    showBusyDialog();
+
+    megaAPI.getThreadPool().background(new Runnable() {
+
+      @Override
+      public void run() {
+        try {
+
+          new LoginRequest(megaAPI, username, password) {
+            public void onError(Exception exception) {
+              super.onError(exception);
+              hideBusyDialog();
+            }
+
+            public void onResponse(com.google.gson.JsonElement response) {
+              super.onResponse(response);
+              hideBusyDialog();
+            }
+
+          }.send();
+        } catch (Exception e) {
+          displayError(e);
+        }
+      }
+    });
+
   }
 
   public void logout() {
+    log.info("logout()");
     getPrefs().edit().remove(PREF_USER_CONTEXT).commit();
     megaAPI.logout();
   }
@@ -101,23 +126,42 @@ public class MegaApplication {
     return megaAPI;
   }
 
-  public AlertDialog createBusyDialog() {
+  public void showBusyDialog() {
+    if (busyDialog != null)
+      return;
     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
     builder.setIcon(R.drawable.ic_launcher);
     builder.setMessage(R.string.please_wait);
-    AlertDialog dialog = builder.create();
-    return dialog;
+    builder.setCancelable(false);
+    busyDialog = builder.create();
+
+    busyDialog.show();
+  }
+
+  public void hideBusyDialog() {
+    activity.runOnUiThread(new Runnable() {
+
+      @Override
+      public void run() {
+        if (busyDialog == null)
+          return;
+        busyDialog.dismiss();
+        busyDialog = null;
+      }
+    });
   }
 
   public AlertDialog createLoginDialog() {
     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
     builder.setIcon(R.drawable.ic_launcher);
     builder.setTitle(R.string.app_name);
+    builder.setCancelable(false);
+
     View view = activity.getLayoutInflater().inflate(R.layout.dialog_login,
         null);
 
-    final TextView username = (TextView) view.findViewById(R.id.username);
-    final TextView password = (TextView) view.findViewById(R.id.password);
+    final TextView txtUsername = (TextView) view.findViewById(R.id.username);
+    final TextView txtPassword = (TextView) view.findViewById(R.id.password);
 
     builder.setView(view);
     builder.setPositiveButton(R.string.login,
@@ -126,7 +170,22 @@ public class MegaApplication {
           @Override
           public void onClick(DialogInterface dialog, int which) {
             dialog.dismiss();
-            login(username.getText().toString(), password.getText().toString());
+
+            String username = txtUsername.getText().toString();
+            String password = txtPassword.getText().toString();
+
+            if (username.equals("")
+                || !Crypto.getInstance().isValidEmailAddress(username)) {
+              displayError(R.string.msg_invalid_username);
+              return;
+            }
+
+            if (password.equals("")) {
+              displayError(R.string.msg_invalid_password);
+              return;
+            }
+
+            login(username, password);
           }
         });
     builder.setNegativeButton(R.string.cancel,
@@ -142,20 +201,37 @@ public class MegaApplication {
 
   public void displayError(Exception e) {
     log.error(e.getMessage(), e);
-    createErrorDialog(e).show();
+    displayError(e.getMessage());
   }
 
-  public AlertDialog createErrorDialog(Exception e) {
-    AlertDialog.Builder builder = new AlertDialog.Builder(activity).setIcon(
-        R.drawable.ic_launcher).setMessage(e.getMessage());
-    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+  public void displayError(int msgId) {
+    displayError(appContext.getString(msgId));
+  }
+
+  public void displayError(final String msg) {
+    activity.runOnUiThread(new Runnable() {
 
       @Override
-      public void onClick(DialogInterface dialog, int which) {
-        dialog.dismiss();
+      public void run() {
+        hideBusyDialog();
+        createErrorDialog(msg).show();
       }
     });
-    builder.setTitle(R.string.an_error_occurred);
+  }
+
+  public AlertDialog createErrorDialog(String msg) {
+    AlertDialog.Builder builder = new AlertDialog.Builder(activity).setIcon(
+        R.drawable.ic_launcher).setMessage(msg);
+    builder.setPositiveButton(R.string.ok,
+        new DialogInterface.OnClickListener() {
+
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.dismiss();
+          }
+        });
+    builder.setTitle(R.string.msg_an_error_occurred);
+
     return builder.create();
   }
 }

@@ -167,35 +167,78 @@ public class Crypto {
     }
   }
 
+  // public byte[] prepareKeyOld(String password) {
+  // try {
+  // return a32_to_bytes(prepare_keyOld(bytes_to_a32(password
+  // .getBytes(ISO_8859_1))));
+  // } catch (UnsupportedEncodingException e) {
+  // e.printStackTrace();
+  // return null;
+  // }
+  // }
+
   public byte[] prepareKey(String password) {
     try {
-      return a32_to_bytes(prepare_key(bytes_to_a32(password
-          .getBytes(ISO_8859_1))));
+      return prepare_key(password.getBytes(ISO_8859_1));
     } catch (UnsupportedEncodingException e) {
       e.printStackTrace();
       return null;
     }
   }
 
-  public int[] prepare_key(int a[]) {
+  //
+  // public int[] prepare_keyOld(int a[]) {
+  //
+  // Cipher aes[] = new Cipher[a.length / 4 + (a.length % 4 == 0 ? 0 : 1)];
+  // int pkey[] = { 0x93C467E3, 0x7DB0C7A4, 0xD1BE3F81, 0x0152CB56 };
+  // int k = 0;
+  //
+  // for (int j = 0; j < a.length; j += 4) {
+  // int key[] = { 0, 0, 0, 0 };
+  // for (int i = 0; i < 4; i++)
+  // if (i + j < a.length)
+  // key[i] = a[i + j];
+  //
+  // aes[k++] = createCipher(a32_to_bytes(key), Cipher.ENCRYPT_MODE);
+  // }
+  //
+  // for (int r = 0; r < 65536; r++) {
+  // for (int j = 0; j < aes.length; j++) {
+  // try {
+  // pkey = bytes_to_a32(aes[j].doFinal(a32_to_bytes(pkey)));
+  // } catch (IllegalBlockSizeException e) {
+  // e.printStackTrace();
+  // } catch (BadPaddingException e) {
+  // e.printStackTrace();
+  // }
+  // }
+  // }
+  // return pkey;
+  //
+  // }
 
-    Cipher aes[] = new Cipher[a.length / 4 + (a.length % 4 == 0 ? 0 : 1)];
-    int pkey[] = { 0x93C467E3, 0x7DB0C7A4, 0xD1BE3F81, 0x0152CB56 };
+  private static final byte[] MEGA_KEY = { -109, -60, 103, -29, 125, -80, -57,
+      -92, -47, -66, 63, -127, 1, 82, -53, 86 };
+
+  public byte[] prepare_key(byte a[]) {
+
+    Cipher aes[] = new Cipher[a.length / 16 + (a.length % 16 == 0 ? 0 : 1)];
+    byte pkey[] = MEGA_KEY;
     int k = 0;
 
-    for (int j = 0; j < a.length; j += 4) {
-      int key[] = { 0, 0, 0, 0 };
-      for (int i = 0; i < 4; i++)
+    for (int j = 0; j < a.length; j += 16) {
+      byte key[] = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+      for (int i = 0; i < 16; i++)
         if (i + j < a.length)
           key[i] = a[i + j];
 
-      aes[k++] = createCipher(a32_to_bytes(key), Cipher.ENCRYPT_MODE);
+      aes[k++] = createCipher(key, Cipher.ENCRYPT_MODE);
     }
 
     for (int r = 0; r < 65536; r++) {
       for (int j = 0; j < aes.length; j++) {
         try {
-          pkey = bytes_to_a32(aes[j].doFinal(a32_to_bytes(pkey)));
+          pkey = aes[j].doFinal(pkey);
         } catch (IllegalBlockSizeException e) {
           e.printStackTrace();
         } catch (BadPaddingException e) {
@@ -291,7 +334,7 @@ public class Crypto {
           + "[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}" + "(" + "\\."
           + "[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25}" + ")+");
 
-  protected boolean checkEmailAddress(CharSequence email) {
+  protected boolean isValidEmailAddress(CharSequence email) {
     return EMAIL_ADDRESS.matcher(email).matches();
   }
 
