@@ -1,5 +1,6 @@
 */bin/*
 */gen/*
+.settings
 *.pydevproject
 /android_mega_api/examples
 /android_mega_api_test/bin
@@ -10,3 +11,4 @@
 /mega_api/docs/
 /mega_api/src/test/
 /mega_api/cpp
+/mega_api_old

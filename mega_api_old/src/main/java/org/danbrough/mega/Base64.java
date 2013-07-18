@@ -17,12 +17,6 @@ package org.danbrough.mega;
 
 import java.io.UnsupportedEncodingException;
 
-/**
- * Taken from the android source code
- * 
- * @author dan
- * 
- */
 public class Base64 {
   /**
    * Default values for encoder/decoder flags.

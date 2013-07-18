@@ -23,11 +23,11 @@ public class ExecutorThreadPool implements ThreadPool {
     running = true;
     pool = Executors.newScheduledThreadPool(initialSize);
   }
-
+  
   public int getInitialSize() {
     return initialSize;
   }
-
+  
   public void setInitialSize(int initialSize) {
     this.initialSize = initialSize;
   }

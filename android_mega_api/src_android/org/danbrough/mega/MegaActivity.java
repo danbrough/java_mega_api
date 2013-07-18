@@ -10,9 +10,7 @@ package org.danbrough.mega;
 import android.app.Activity;
 import android.os.Bundle;
 
-import com.google.gson.JsonElement;
-
-public class MegaActivity extends Activity implements MegaListener {
+public class MegaActivity extends Activity {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaActivity.class.getSimpleName());
 
@@ -20,23 +18,52 @@ public class MegaActivity extends Activity implements MegaListener {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    log.trace("onCreate() {}", savedInstanceState);
     super.onCreate(savedInstanceState);
-    if (application == null) {
-      application = new MegaApplication(this);
-    }
+    application = (MegaApplication) getApplication();
+    application.onActivityCreated(this, savedInstanceState);
   }
 
   @Override
   protected void onStart() {
+    log.trace("onStart()");
     super.onStart();
-    application.setActivity(this);
-  }
-
-  public void onFilesModified(JsonElement o) {
-    log.info("onFilesModified() :{}", o);
+    application.onActivityStarted(this);
   }
 
   @Override
-  public void onLoggedOut() {
+  protected void onResume() {
+    log.trace("onResume()");
+    super.onResume();
+    application.onActivityResumed(this);
   }
+
+  @Override
+  protected void onPause() {
+    log.trace("onPause()");
+    super.onPause();
+    application.onActivityPaused(this);
+  }
+
+  @Override
+  protected void onStop() {
+    log.trace("onStop()");
+    super.onStop();
+    application.onActivityStopped(this);
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    log.trace("onSaveInstanceState() {}", outState);
+    super.onSaveInstanceState(outState);
+    application.onActivitySaveInstanceState(this, outState);
+  }
+
+  @Override
+  protected void onDestroy() {
+    log.trace("onDestroy()");
+    super.onDestroy();
+    application.onActivityDestroyed(this);
+  }
+
 }

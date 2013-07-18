@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>AndroidMegaAPI</name>
+	<name>android_mega_api</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -40,12 +40,12 @@
 		<link>
 			<name>java</name>
 			<type>2</type>
-			<location>/home/dan/workspace/android_mega_api/mega_api/src/main/java</location>
+			<location>/home/dan/workspace/mega_parent/mega_api/src/main/java</location>
 		</link>
 		<link>
 			<name>resources</name>
 			<type>2</type>
-			<location>/home/dan/workspace/android_mega_api/mega_api/src/main/resources</location>
+			<location>/home/dan/workspace/mega_parent/mega_api/src/main/resources</location>
 		</link>
 	</linkedResources>
 </projectDescription>

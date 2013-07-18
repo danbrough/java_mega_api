@@ -7,129 +7,45 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
-import org.danbrough.mega.protocol.LoginRequest;
+import java.io.IOException;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
+import android.app.Application;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.TextView;
 
-import com.google.gson.JsonParser;
-
-public class MegaApplication {
+public class MegaApplication extends Application {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaApplication.class.getSimpleName());
 
   private static final String PREF_USER_CONTEXT = "userContext";
 
-  private MegaAPI megaAPI;
-
-  AlertDialog busyDialog;
+  ThreadPool threadPool;
+  MegaClient client;
+  Handler handler;
+  Thread uiThread;
   Activity activity;
-  private final Context appContext;
 
-  public MegaApplication(Activity activity) {
+  public MegaApplication() {
     super();
-
-    this.activity = activity;
-    this.appContext = activity.getApplicationContext();
-
-    showBusyDialog();
-
-    megaAPI = new MegaAPI();
-
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          initialize();
-        } finally {
-          hideBusyDialog();
-        }
-      }
-    }.start();
-  }
-
-  private void initialize() {
-    megaAPI.start();
-    if (getPrefs().contains(PREF_USER_CONTEXT)) {
-      megaAPI.createUserContext(new JsonParser().parse(
-          getPrefs().getString(PREF_USER_CONTEXT, null)).getAsJsonObject());
-    }
-  }
-
-  public void setActivity(Activity activity) {
-    this.activity = activity;
-    if (activity instanceof MegaListener)
-      megaAPI.setListener((MegaListener) activity);
   }
 
   public SharedPreferences getPrefs() {
-    return PreferenceManager.getDefaultSharedPreferences(appContext);
+    return PreferenceManager.getDefaultSharedPreferences(this);
   }
 
-  public void saveUserContext() {
-    log.debug("saveUserContext()");
-    UserContext ctx = megaAPI.getUserContext();
-    String s = Crypto.getInstance().toJSON(ctx).toString();
-    getPrefs().edit().putString(PREF_USER_CONTEXT, s).commit();
-  }
-
-  public void login(final String username, final String password) {
-    log.info("login() {}", username);
-
-    showBusyDialog();
-
-    megaAPI.getThreadPool().background(new Runnable() {
-
-      @Override
-      public void run() {
-        try {
-
-          new LoginRequest(megaAPI, username, password) {
-            public void onError(Exception exception) {
-              super.onError(exception);
-              hideBusyDialog();
-            }
-
-            public void onResponse(com.google.gson.JsonElement response) {
-              super.onResponse(response);
-              hideBusyDialog();
-            }
-
-          }.send();
-        } catch (Exception e) {
-          displayError(e);
-        }
-      }
-    });
-
-  }
-
-  public void logout() {
-    log.info("logout()");
-    getPrefs().edit().remove(PREF_USER_CONTEXT).commit();
-    megaAPI.logout();
-  }
-
-  public void stop() {
-    if (megaAPI == null)
-      return;
-    megaAPI.stop();
-  }
-
-  public MegaAPI getMega() {
-    return megaAPI;
-  }
+  AlertDialog busyDialog;
 
   public void showBusyDialog() {
     if (busyDialog != null)
       return;
-    AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
     builder.setIcon(R.drawable.ic_launcher);
     builder.setMessage(R.string.please_wait);
     builder.setCancelable(false);
@@ -139,7 +55,8 @@ public class MegaApplication {
   }
 
   public void hideBusyDialog() {
-    activity.runOnUiThread(new Runnable() {
+
+    runOnUiThread(new Runnable() {
 
       @Override
       public void run() {
@@ -149,6 +66,13 @@ public class MegaApplication {
         busyDialog = null;
       }
     });
+  }
+
+  private void runOnUiThread(Runnable runnable) {
+    if (Thread.currentThread() == uiThread)
+      runnable.run();
+    else
+      handler.post(runnable);
   }
 
   public AlertDialog createLoginDialog() {
@@ -174,18 +98,12 @@ public class MegaApplication {
             String username = txtUsername.getText().toString();
             String password = txtPassword.getText().toString();
 
-            if (username.equals("")
-                || !Crypto.getInstance().isValidEmailAddress(username)) {
-              displayError(R.string.msg_invalid_username);
-              return;
+            try {
+              client.login(username, password);
+            } catch (IOException e) {
+              log.error(e.getMessage(), e);
             }
 
-            if (password.equals("")) {
-              displayError(R.string.msg_invalid_password);
-              return;
-            }
-
-            login(username, password);
           }
         });
     builder.setNegativeButton(R.string.cancel,
@@ -205,7 +123,7 @@ public class MegaApplication {
   }
 
   public void displayError(int msgId) {
-    displayError(appContext.getString(msgId));
+    displayError(getString(msgId));
   }
 
   public void displayError(final String msg) {
@@ -233,5 +151,58 @@ public class MegaApplication {
     builder.setTitle(R.string.msg_an_error_occurred);
 
     return builder.create();
+  }
+
+  @Override
+  public void onCreate() {
+    log.info("onCreate();");
+    super.onCreate();
+
+    handler = new Handler();
+    uiThread = Thread.currentThread();
+    threadPool = new ExecutorThreadPool();
+    threadPool.start();
+
+    client = new MegaClient("AndroidMegaDemo", threadPool);
+    client.start();
+    log.error("INSTANCE: " + org.apache.http.message.BasicLineFormatter.class);
+  }
+
+  @Override
+  public void onTerminate() {
+    log.info("onTerminate()");
+    super.onTerminate();
+    client.stop();
+    threadPool.stop();
+    threadPool = null;
+  }
+
+  public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+    this.activity = activity;
+  }
+
+  public void onActivityStarted(MegaActivity megaActivity) {
+
+  }
+
+  public void onActivityResumed(MegaActivity megaActivity) {
+
+  }
+
+  public void onActivityPaused(MegaActivity megaActivity) {
+
+  }
+
+  public void onActivityStopped(MegaActivity megaActivity) {
+
+  }
+
+  public void onActivitySaveInstanceState(MegaActivity megaActivity,
+      Bundle outState) {
+
+  }
+
+  public void onActivityDestroyed(MegaActivity megaActivity) {
+
   }
 }

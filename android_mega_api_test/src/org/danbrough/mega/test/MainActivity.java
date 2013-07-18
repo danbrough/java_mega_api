@@ -18,29 +18,24 @@ public class MainActivity extends MegaActivity {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
-    log.info("onCreate()");
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
   }
 
   @Override
   protected void onStart() {
-    log.debug("onStart()");
     super.onStart();
   }
 
   @Override
   protected void onResume() {
-    log.debug("onResume()");
     super.onResume();
-
     configureLayout();
   }
 
   private void configureLayout() {
     log.debug("configureLayout()");
-
-    boolean loggedIn = application.getMega().isLoggedIn();
+    boolean loggedIn = false;
     View btnLogin = findViewById(R.id.btnLogin);
     View btnLogout = findViewById(R.id.btnLogout);
     btnLogin.setVisibility(loggedIn ? View.GONE : View.VISIBLE);
@@ -61,13 +56,6 @@ public class MainActivity extends MegaActivity {
 
   public void logout(View view) {
     log.info("logout()");
-    application.logout();
-  }
-
-  @Override
-  public void onLoggedOut() {
-    log.debug("onLoggedOut()");
-    configureLayout();
   }
 
 }
