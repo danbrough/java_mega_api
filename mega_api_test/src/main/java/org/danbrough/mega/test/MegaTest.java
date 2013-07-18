@@ -14,7 +14,7 @@ public class MegaTest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaTest.class.getSimpleName());
 
-  private static final String APP_NAME = "MegaJavaAPITest";
+  private static final String APP_NAME = "DQcSQK7S";
 
   ConsoleReader console;
   MegaClient client;
