@@ -10,9 +10,9 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<artifactId>mega-parent</artifactId>
 	<packaging>pom</packaging>
-	
+
 	<properties>
-	    <mega.home>${basedir}</mega.home>
+		<mega.home>${basedir}</mega.home>
 	</properties>
 
 	<modules>
@@ -46,14 +46,8 @@
 			<version>2.2.4</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpasyncclient</artifactId>
-			<version>4.0-beta4</version>
-		</dependency>
-
 	</dependencies>
-	
+
 	<build>
 		<plugins>
 			<plugin>

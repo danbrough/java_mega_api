@@ -15,8 +15,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.http.message.BasicLineFormatter;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -31,7 +29,6 @@ public class MegaClient {
   MegaCrypto crypto = MegaCrypto.get();
 
   LinkedList<Command> cmdQueue = new LinkedList<Command>();
-  BasicLineFormatter d;
 
   byte passwordKey[];
   byte masterKey[];
@@ -47,8 +44,8 @@ public class MegaClient {
 
   ThreadPool threadPool;
 
-  // back off time for server client requests
-  long backoffsc = 500;
+  // back off time for server client requests in millis
+  long backoffsc = 100;
 
   String scnotifyurl = null;
 
@@ -158,8 +155,38 @@ public class MegaClient {
     if (!running)
       return;
     running = false;
-
+    startedSC = false;
     notifyWorker();
+  }
+
+  public void getAccountDetails(boolean storage, boolean transfer, boolean pro,
+      boolean transactions, boolean purchases, boolean sessions,
+      final Callback<AccountDetails> detailsCallback) {
+    final AccountDetails details = new AccountDetails();
+
+    // reqs[r].add(new CommandGetUserQuota(this, ad, storage, transfer, pro));
+    // if (transactions)
+    // reqs[r].add(new CommandGetUserTransactions(this, ad));
+    // if (purchases)
+    // reqs[r].add(new CommandGetUserPurchases(this, ad));
+    // if (sessions)
+    // reqs[r].add(new CommandGetUserSessions(this, ad));
+
+    enqueueCommand(new CommandGetUserQuota(this, details, storage, transfer,
+        pro));
+
+    if (sessions) {
+      enqueueCommand(new Command("usl") {
+        @Override
+        public void processResponse(JsonElement e) throws Exception {
+          details.setSessions(e.getAsJsonArray());
+          if (detailsCallback != null) {
+            detailsCallback.onResult(details);
+          }
+        }
+      });
+    }
+
   }
 
   @SuppressWarnings("unchecked")
@@ -201,30 +228,27 @@ public class MegaClient {
   protected void sendSC() {
     if (!running)
       return;
-    log.trace("sendSC()");
 
     try {
       String url = null;
 
-      if (scnotifyurl != null)
+      if (scnotifyurl != null) {
         url = scnotifyurl;
-      else {
+      } else {
         url = API_URL;
-        url += "sc?ssl=1&sn=";
+        url += "sc?sn=";
         url += scsn;
         url += auth;
       }
 
-      log.trace("url {}", url);
+      log.debug("sendSC() url {}", url);
       final HttpURLConnection conn = (HttpURLConnection) new URL(url.toString())
           .openConnection();
-      scnotifyurl = null;
+
       conn.setDoInput(true);
-      conn.setUseCaches(false);
+      conn.setDoOutput(false);
       conn.setRequestProperty("User-Agent", USER_AGENT);
       conn.setRequestProperty("Content-Type", "application/json");
-      conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
-      conn.setAllowUserInteraction(false);
       conn.setRequestMethod("POST");
 
       int responseCode = conn.getResponseCode();
@@ -238,20 +262,15 @@ public class MegaClient {
       if ("gzip".equals(encoding))
         input = new GZIPInputStream(input);
 
-      backoffsc = 500;
-
-      if (length > 0) {
+      if (scnotifyurl == null) {
         Reader reader = new BufferedReader(new InputStreamReader(input));
         JsonElement response = GSONUtil.getGSON().fromJson(reader,
             JsonElement.class);
-
         procsc(response.getAsJsonObject());
-
+        backoffsc = 100;
       } else {
-        log.error("No response to sc");
-
-        if (backoffsc < 3600000)
-          backoffsc <<= 1;
+        log.warn("scnotifyurl != null");
+        scnotifyurl = null;
       }
 
     } catch (Exception e) {
@@ -259,6 +278,7 @@ public class MegaClient {
 
       if (backoffsc < 3600000)
         backoffsc <<= 1;
+      scnotifyurl = null;
     }
 
     threadPool.background(new Runnable() {
@@ -384,7 +404,6 @@ public class MegaClient {
         if (!startedSC) {
           startedSC = true;
           threadPool.background(new Runnable() {
-
             @Override
             public void run() {
               sendSC();
@@ -399,10 +418,6 @@ public class MegaClient {
     synchronized (cmdQueue) {
       cmdQueue.notifyAll();
     }
-  }
-
-  public String getScsn() {
-    return scsn;
   }
 
   // protected void processRequestAsync(List<Command> commands) throws

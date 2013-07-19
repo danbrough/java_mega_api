@@ -24,8 +24,6 @@ public class MegaApplication extends Application {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaApplication.class.getSimpleName());
 
-  private static final String PREF_USER_CONTEXT = "userContext";
-
   ThreadPool threadPool;
   MegaClient client;
   Handler handler;
@@ -68,7 +66,7 @@ public class MegaApplication extends Application {
     });
   }
 
-  private void runOnUiThread(Runnable runnable) {
+  public void runOnUiThread(Runnable runnable) {
     if (Thread.currentThread() == uiThread)
       runnable.run();
     else
@@ -163,9 +161,8 @@ public class MegaApplication extends Application {
     threadPool = new ExecutorThreadPool();
     threadPool.start();
 
-    client = new MegaClient("AndroidMegaDemo", threadPool);
+    client = new MegaClient("DQcSQK7S", threadPool);
     client.start();
-    log.error("INSTANCE: " + org.apache.http.message.BasicLineFormatter.class);
   }
 
   @Override
