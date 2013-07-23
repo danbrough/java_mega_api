@@ -11,20 +11,20 @@ import org.danbrough.mega.AccountDetails.UserSession;
 import org.danbrough.mega.Callback;
 import org.danbrough.mega.ExecutorThreadPool;
 import org.danbrough.mega.MegaClient;
+import org.danbrough.mega.Node;
 import org.danbrough.mega.ThreadPool;
 
 public class MegaTest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaTest.class.getSimpleName());
 
-  private static final String APP_KEY = "DQcSQK7S";
-
+  String appKey;
   ConsoleReader console;
   MegaClient client;
   ThreadPool threadPool;
   FileHistory history;
 
-  public MegaTest() throws IOException {
+  public MegaTest(String args[]) throws IOException {
     super();
     console = new ConsoleReader();
     console.setPrompt(">> ");
@@ -36,7 +36,13 @@ public class MegaTest {
     console.setHistory(history);
 
     threadPool = new ExecutorThreadPool();
-    client = new MegaClient(APP_KEY, threadPool);
+
+    String appKey = "MegaJavaTest";
+
+    File settingsFile = new File(System.getProperty("user.home"),
+        ".mega_test.settings");
+
+    client = new MegaClient(appKey, threadPool);
   }
 
   public void printHelp() throws IOException {
@@ -50,39 +56,59 @@ public class MegaTest {
         + "passwd\n" + "debug\n" + "quit");
   }
 
-  public void quit() {
-    log.info("quit()");
+  public void cmd_quit() {
+    log.info("cmd_quit()");
     client.stop();
     threadPool.stop();
+    System.exit(0);
   }
 
-  public void whoami() {
-    log.info("whoami();");
+  public void cmd_whoami() {
+    log.info("cmd_whoami();");
 
     client.getAccountDetails(true, true, true, true, true, true,
         new Callback<AccountDetails>() {
           @Override
           public void onResult(AccountDetails result) {
             for (UserSession session : result.getSessions()) {
-              System.out.println(session.toString());
+              try {
+                console.println(session.toString());
+              } catch (IOException e) {
+                log.error(e.getMessage(), e);
+              }
             }
           }
         });
-
-    // void MegaClient::getaccountdetails(AccountDetails* ad, int storage,
-    // int transfer, int pro, int transactions, int purchases, int sessions) {
-    // reqs[r].add(new CommandGetUserQuota(this, ad, storage, transfer, pro));
-    // if (transactions)
-    // reqs[r].add(new CommandGetUserTransactions(this, ad));
-    // if (purchases)
-    // reqs[r].add(new CommandGetUserPurchases(this, ad));
-    // if (sessions)
-    // reqs[r].add(new CommandGetUserSessions(this, ad));
-    // }
-
   }
 
-  public void run(String[] args) throws IOException {
+  public void cmd_ls(String args[]) throws IOException {
+    boolean recursive = false;
+    String path = null;
+
+    if (args.length == 3) {
+      if (args[1].equals("-R")) {
+        recursive = true;
+        path = args[2];
+      } else {
+        console.println("usage ls (-R) path");
+        return;
+      }
+    } else if (args.length == 2) {
+      path = args[1];
+    } else {
+      console.println("usage ls (-R) path");
+      return;
+    }
+
+    log.debug("path:" + path + " recursive: " + recursive);
+
+    client.setCurrentFolder(client.getRootNode());
+    for (Node node : client.getChildren()) {
+      log.debug("child: {}", node);
+    }
+  }
+
+  public void run() throws IOException {
 
     log.trace("run():trace");
     log.debug("run():debug");
@@ -110,7 +136,7 @@ public class MegaTest {
           if (cmd.equals("login")) {
             client.login(words[1], words[2]);
           } else if (cmd.equals("quit")) {
-            quit();
+            cmd_quit();
             return;
           } else if (cmd.equals("?") || cmd.equals("h") || cmd.equals("help")) {
             addToHistory = false;
@@ -118,7 +144,7 @@ public class MegaTest {
           } else if (cmd.equals("mount")) {
             log.error("mount not implemented");
           } else if (cmd.equals("ls")) {
-            log.error("ls not implemented");
+            cmd_ls(words);
           } else if (cmd.equals("cd")) {
             log.error("cd not implemented");
           } else if (cmd.equals("get")) {
@@ -144,7 +170,7 @@ public class MegaTest {
           } else if (cmd.equals("import")) {
             log.error("import not implemented");
           } else if (cmd.equals("whoami")) {
-            whoami();
+            cmd_whoami();
           } else if (cmd.equals("passwd")) {
             log.error("passwd not implemented");
           } else {
@@ -170,6 +196,6 @@ public class MegaTest {
   }
 
   public static void main(String[] args) throws IOException {
-    new MegaTest().run(args);
+    new MegaTest(args).run();
   }
 }

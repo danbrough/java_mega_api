@@ -3,6 +3,8 @@ package org.danbrough.mega;
 import com.google.gson.annotations.SerializedName;
 
 public class Node {
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
+      .getLogger(Node.class.getSimpleName());
 
   public enum ShareReadMode {
     ShareReadMode(0), SHAREOWNERKEY(1), OUTSHARE(2);
@@ -222,5 +224,29 @@ public class Node {
 
   public String getSharingUser() {
     return sharingUser;
+  }
+
+  @Override
+  public String toString() {
+    return GSONUtil.getGSON().toJson(this);
+  }
+
+  public void applyKey(MegaClient client) {
+    log.debug("applyKey() {} key: {}", handle, key);
+    if (key == null) {
+      log.error("key is null");
+      return;
+    }
+
+    if (key.equals("")) {
+      log.error("key is empty");
+      return;
+    }
+
+    String keys[] = key.split(":");
+    for (String key : keys) {
+      log.debug("KEY PART: {}", key);
+    }
+
   }
 }

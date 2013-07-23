@@ -9,9 +9,12 @@ import java.io.Reader;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
@@ -28,6 +31,7 @@ public class MegaClient {
 
   MegaCrypto crypto = MegaCrypto.get();
 
+  Node currentFolder = null;
   LinkedList<Command> cmdQueue = new LinkedList<Command>();
 
   byte passwordKey[];
@@ -53,6 +57,11 @@ public class MegaClient {
 
   // server-client request sequence number
   String scsn;
+
+  Node rootNode, incomingNode, rubbishNode, mailNode;
+  Map<String, Node> nodes;
+
+  HashMap<String, User> users;
 
   public MegaClient(String appkey, ThreadPool threadPool) {
     this.threadPool = threadPool;
@@ -420,6 +429,48 @@ public class MegaClient {
     }
   }
 
+  public synchronized void clearNodes() {
+    rootNode = incomingNode = mailNode = rubbishNode = null;
+    nodes = null;
+    users = null;
+  }
+
+  public Node getRootNode() {
+    return rootNode;
+  }
+
+  public void setRootNode(Node rootNode) {
+    this.rootNode = rootNode;
+  }
+
+  public Node getIncomingNode() {
+    return incomingNode;
+  }
+
+  public void setIncomingNode(Node incomingNode) {
+    this.incomingNode = incomingNode;
+  }
+
+  public Node getRubbishNode() {
+    return rubbishNode;
+  }
+
+  public void setRubbishNode(Node rubbishNode) {
+    this.rubbishNode = rubbishNode;
+  }
+
+  public Node getMailNode() {
+    return mailNode;
+  }
+
+  public void setMailNode(Node mailNode) {
+    this.mailNode = mailNode;
+  }
+
+  public void setNodes(HashMap<String, Node> nodes) {
+    this.nodes = nodes;
+  }
+
   // protected void processRequestAsync(List<Command> commands) throws
   // IOException {
   // log.debug("processRequestAsync() ");
@@ -466,4 +517,39 @@ public class MegaClient {
   // }
   //
   // }
+
+  public List<Node> getChildren() {
+    if (nodes == null)
+      return Collections.emptyList();
+    if (currentFolder == null)
+      currentFolder = rootNode;
+    LinkedList<Node> children = new LinkedList<Node>();
+    for (Node n : nodes.values()) {
+      if (n.getParent() != null
+          && n.getParent().equals(currentFolder.getHandle())) {
+        children.add(n);
+      }
+    }
+    return children;
+  }
+
+  public Node getCurrentFolder() {
+    return currentFolder;
+  }
+
+  public void setCurrentFolder(Node folder) {
+    this.currentFolder = folder;
+  }
+
+  public void applyKeys() {
+    log.info("applyKeys()");
+    for (Node node : nodes.values()) {
+      node.applyKey(this);
+    }
+  }
+
+  public void setUsers(HashMap<String, User> users) {
+    this.users = users;
+  }
+
 }
