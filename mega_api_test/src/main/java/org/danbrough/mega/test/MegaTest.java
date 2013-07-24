@@ -30,6 +30,7 @@ public class MegaTest {
   FileHistory history;
   File sessionFile = new File(System.getProperty("user.home"),
       ".megatest_session");
+  File currentDir = new File(".").getCanonicalFile();
 
   public MegaTest(String args[]) throws IOException {
     super();
@@ -65,10 +66,7 @@ public class MegaTest {
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
-        try {
-          saveSession();
-        } catch (Throwable t) {
-        }
+        quit();
       }
     });
 
@@ -79,8 +77,8 @@ public class MegaTest {
   }
 
   public void printHelp() throws IOException {
-    console.println("login email [password]/folderurl\n" + "mount\n"
-        + "ls [-R] [path]\n" + "cd [path]\n" + "get remotefile\n"
+    console.println("login email [password]/folderurl\n" + "logout\n"
+        + "mount\n" + "ls [-R] [path]\n" + "cd [path]\n" + "get remotefile\n"
         + "put localfile [path/email]\n" + "mkdir path\n"
         + "rm path (instant completion)\n"
         + "mv path path (instant completion)\n" + "cp path path/email\n"
@@ -89,39 +87,72 @@ public class MegaTest {
         + "passwd\n" + "debug\n" + "quit");
   }
 
+  public synchronized void quit() {
+    if (client != null) {
+      saveSession();
+      client.stop();
+      client = null;
+    }
+
+    if (threadPool != null) {
+      threadPool.stop();
+      threadPool = null;
+    }
+
+    if (console != null) {
+      try {
+        console.flush();
+      } catch (IOException e) {
+        log.error(e.getMessage(), e);
+      }
+      console = null;
+    }
+  }
+
   public void saveSession() {
-    log.error("test:saveSession()");
     FileWriter output;
     try {
-
-      log.error("getting json ..");
-
-      String json = GSONUtil.getGSON().toJson(client);
-      log.error("client: {}", json);
       output = new FileWriter(sessionFile);
-      output.write(json);
+      GSONUtil.getGSON().toJson(client, output);
       output.close();
     } catch (Throwable e) {
       log.error(e.getMessage(), e);
     }
 
+    log.trace("session saved to {}", sessionFile);
   }
 
   public void cmd_login(String email, String password) throws IOException {
     client.login(email, password, new Callback<Void>() {
       @Override
       public void onResult(Void result) {
-        log.warn("SCSN: {}", client.getScsn());
         saveSession();
       }
     });
   }
 
-  public void cmd_quit() {
-    log.info("cmd_quit()");
+  public void cmd_logout() throws IOException {
     client.stop();
-    threadPool.stop();
-    System.exit(0);
+    client = null;
+    client = new MegaClient();
+    client.setAppKey(appKey);
+    client.setThreadPool(threadPool);
+    client.start();
+  }
+
+  public void cmd_lcd(String path) throws IOException {
+    File newDir = null;
+    if (path.startsWith("" + File.separatorChar)) {
+      newDir = new File(path);
+    } else {
+      newDir = new File(currentDir, path);
+    }
+    if (newDir.exists() && newDir.isDirectory()) {
+      currentDir = newDir.getCanonicalFile();
+    } else {
+      console.println("invalid path: " + newDir.getAbsolutePath());
+    }
+    console.println(currentDir.getCanonicalPath());
   }
 
   public void cmd_whoami() {
@@ -171,35 +202,31 @@ public class MegaTest {
 
   public void run() throws IOException {
 
-    log.trace("run():trace");
-    log.debug("run():debug");
-    log.info("run():info");
-    log.warn("run():warn");
-    log.error("run():error");
-
     threadPool.start();
     client.start();
+
+    String line;
     try {
-      String line;
       while ((line = console.readLine()) != null) {
+
         String words[] = line.split("\\s+");
         if (words.length == 0)
           continue;
 
+        String cmd = words[0];
+
+        boolean addToHistory = true;
         try {
-          String cmd = words[0];
-          if (cmd.equals(""))
-            continue;
-          log.debug("cmd [{}]", cmd);
-
-          boolean addToHistory = true;
-
           if (cmd.equals("login")) {
             cmd_login(words[1], words[2]);
+          } else if (cmd.equals("test")) {
+            cmd_test();
+          } else if (cmd.equals("logout")) {
+            cmd_logout();
           } else if (cmd.equals("quit")) {
-            cmd_quit();
-            return;
-          } else if (cmd.equals("?") || cmd.equals("h") || cmd.equals("help")) {
+            break;
+          } else if (cmd.equals("?") || cmd.equals("h") || cmd.equals("help")
+              || cmd.equals("")) {
             addToHistory = false;
             printHelp();
           } else if (cmd.equals("mount")) {
@@ -221,9 +248,9 @@ public class MegaTest {
           } else if (cmd.equals("cp")) {
             log.error("cp not implemented");
           } else if (cmd.equals("pwd")) {
-            log.error("pwd not implemented");
+            console.println(currentDir.getAbsolutePath());
           } else if (cmd.equals("lcd")) {
-            log.error("lcd not implemented");
+            cmd_lcd(words[1]);
           } else if (cmd.equals("share")) {
             log.error("share not implemented");
           } else if (cmd.equals("export")) {
@@ -244,16 +271,30 @@ public class MegaTest {
             history.add(line);
             history.flush();
           }
-
-        } catch (Exception e) {
-          e.printStackTrace();
+        } catch (Exception ex) {
+          ex.printStackTrace();
         }
       }
-    } finally {
 
-      threadPool.stop();
-      client.stop();
+    } finally {
+      quit();
     }
+  }
+
+  public void cmd_test() throws IOException {
+    log.info("cmd_test();");
+    client.getAccountDetails(true, true, false, false, false, false,
+        new Callback<AccountDetails>() {
+          @Override
+          public void onResult(AccountDetails result) {
+            try {
+              console.println(GSONUtil.getGSON().toJson(result));
+            } catch (IOException e) {
+              log.error(e.getMessage(), e);
+            }
+
+          }
+        });
   }
 
   public static void main(String[] args) throws IOException {

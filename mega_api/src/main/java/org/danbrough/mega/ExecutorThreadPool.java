@@ -9,6 +9,7 @@ package org.danbrough.mega;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 public class ExecutorThreadPool implements ThreadPool {
@@ -16,12 +17,21 @@ public class ExecutorThreadPool implements ThreadPool {
   ScheduledExecutorService pool;
   boolean running = false;
   int initialSize = 2;
+  boolean daemon = true;
 
   public synchronized void start() {
     if (running)
       return;
     running = true;
-    pool = Executors.newScheduledThreadPool(initialSize);
+    pool = Executors.newScheduledThreadPool(initialSize, new ThreadFactory() {
+
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread thread = new Thread(r);
+        thread.setDaemon(daemon);
+        return thread;
+      }
+    });
   }
 
   public int getInitialSize() {

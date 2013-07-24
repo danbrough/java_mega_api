@@ -29,8 +29,8 @@ public class MegaClient {
   private transient static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaClient.class.getSimpleName());
 
-  public transient static final String API_URL = "https://g.api.mega.co.nz/";
-  public transient static final String USER_AGENT = "MegaJavaClient-1.0";
+  public static final String API_URL = "https://g.api.mega.co.nz/";
+  public static final String USER_AGENT = "MegaJavaClient-1.0";
 
   transient MegaCrypto crypto = MegaCrypto.get();
 
@@ -43,7 +43,7 @@ public class MegaClient {
 
   String email;
 
-  transient User me;
+  User me;
 
   // no two interrelated client instances should ever have the same sessionid
   @SerializedName("sid")
@@ -67,10 +67,9 @@ public class MegaClient {
   // server-client request sequence number
   String scsn;
 
-  transient Node rootNode, incomingNode, rubbishNode, mailNode;
-  transient Map<String, Node> nodes;
-
-  transient HashMap<String, User> users;
+  Node rootNode, incomingNode, rubbishNode, mailNode;
+  Map<String, Node> nodes;
+  HashMap<String, User> users;
 
   public MegaClient() {
     super();
@@ -82,18 +81,6 @@ public class MegaClient {
       id[i] = (char) ('a' + crypto.randInt(26));
     }
     return id;
-  }
-
-  void incrementRequestID() {
-    // increment unique request ID
-    log.warn("incrementRequestID()");
-    for (int i = reqid.length - 1; i >= 0; i--) {
-      reqid[i] += 1;
-      if (reqid[i] < 'z')
-        break;
-      else
-        reqid[i] = 'a';
-    }
   }
 
   public void setSessionID(String sessionID) {
@@ -127,7 +114,8 @@ public class MegaClient {
       @Override
       public void processResponse(JsonElement e) throws Exception {
         super.processResponse(e);
-        callback.onResult(null);
+        if (callback != null)
+          callback.onResult(null);
       }
     });
   }
@@ -135,6 +123,15 @@ public class MegaClient {
   public void enqueueCommand(Command cmd) {
     synchronized (cmdQueue) {
       cmdQueue.addLast(cmd);
+      cmdQueue.notify();
+    }
+  }
+
+  public void enqueueCommands(List<Command> commands) {
+    synchronized (cmdQueue) {
+      while (!commands.isEmpty()) {
+        cmdQueue.addLast(commands.remove(0));
+      }
       cmdQueue.notify();
     }
   }
@@ -148,10 +145,9 @@ public class MegaClient {
       return;
     running = true;
 
-    // initialize random client application instance ID
-
-    if (sessionID == null)
-      sessionID = new String(generateID(10));
+    if (sessionID != null) {
+      log.info("logged in as: {} with session: {}", email, sessionID);
+    }
 
     // initialize random API request sequence ID
 
@@ -174,9 +170,12 @@ public class MegaClient {
   public synchronized void stop() {
     if (!running)
       return;
+    log.info("stop();");
     running = false;
     startedSC = false;
+    log.info("notifying worker..");
     notifyWorker();
+    log.info("stop() finished");
   }
 
   @SuppressWarnings("unchecked")
@@ -223,20 +222,20 @@ public class MegaClient {
       boolean transactions, boolean purchases, boolean sessions,
       final Callback<AccountDetails> detailsCallback) {
     final AccountDetails details = new AccountDetails();
+    LinkedList<Command> commands = new LinkedList<Command>();
 
-    // reqs[r].add(new CommandGetUserQuota(this, ad, storage, transfer, pro));
     // if (transactions)
     // reqs[r].add(new CommandGetUserTransactions(this, ad));
     // if (purchases)
     // reqs[r].add(new CommandGetUserPurchases(this, ad));
-    // if (sessions)
-    // reqs[r].add(new CommandGetUserSessions(this, ad));
 
-    enqueueCommand(new CommandGetUserQuota(this, details, storage, transfer,
+    commands.addLast(new CommandGetUserQuota(this, details, storage, transfer,
         pro));
 
+    log.warn("transactions,purchases not implemented");
+
     if (sessions) {
-      enqueueCommand(new Command("usl") {
+      commands.addLast(new Command("usl") {
         @Override
         public void processResponse(JsonElement e) throws Exception {
           details.setSessions(e.getAsJsonArray());
@@ -246,6 +245,8 @@ public class MegaClient {
         }
       });
     }
+
+    enqueueCommands(commands);
 
   }
 
@@ -262,7 +263,7 @@ public class MegaClient {
     }
 
     if (o.has("a")) {
-      log.error("A: {}", o.get("a"));
+      log.trace("a: {}", o.get("a"));
     }
   }
 
@@ -315,31 +316,46 @@ public class MegaClient {
     log.debug("responseCode: " + responseCode + " encoding: {} length: "
         + length, encoding);
 
-    if (responseCode == HttpURLConnection.HTTP_OK) {
-      incrementRequestID();
-    }
-
     InputStream input = conn.getInputStream();
     if ("gzip".equals(encoding))
       input = new GZIPInputStream(input);
 
+    for (int i = reqid.length - 1; i >= 0; i--) {
+      reqid[i] += 1;
+      if (reqid[i] < 'z')
+        break;
+      else
+        reqid[i] = 'a';
+    }
+
     Reader reader = new BufferedReader(new InputStreamReader(input));
-    JsonArray response = GSONUtil.getGSON().fromJson(reader, JsonArray.class);
+    JsonElement json = GSONUtil.getGSON().fromJson(reader, JsonElement.class);
 
-    log.trace("response: {}", response);
+    log.trace("response: {}", json);
 
-    for (int i = 0; i < response.size(); i++) {
-      JsonElement e = response.get(i);
-      Command cmd = commands.get(i);
+    if (json.isJsonPrimitive()) {
+      APIError error = APIError.getError(json.getAsInt());
+      for (int i = 0; i < commands.size(); i++) {
+        Command cmd = commands.get(i);
+        cmd.onError(error);
+      }
+    } else {
 
-      try {
-        cmd.onError(APIError.getError(e.getAsInt()));
-      } catch (Exception ex) {
-        try {
-          cmd.processResponse(e);
-        } catch (Exception ex2) {
-          cmd.onError(ex2);
+      JsonArray response = json.getAsJsonArray();
+      for (int i = 0; i < response.size(); i++) {
+        JsonElement e = response.get(i);
+        Command cmd = commands.get(i);
+
+        if (e.isJsonPrimitive()) {
+          cmd.onError(APIError.getError(e.getAsInt()));
+        } else {
+          try {
+            cmd.processResponse(e);
+          } catch (Exception ex) {
+            cmd.onError(ex);
+          }
         }
+
       }
     }
   }
@@ -361,7 +377,7 @@ public class MegaClient {
           url += "&sid=" + sessionID;
       }
 
-      log.debug("sendSC() url {}", url);
+      log.trace("sendSC() url {}", url);
       final HttpURLConnection conn = (HttpURLConnection) new URL(url.toString())
           .openConnection();
 
@@ -388,14 +404,13 @@ public class MegaClient {
             JsonElement.class);
         procsc(response.getAsJsonObject());
         backoffsc = 100;
+        // scnotifyurl will have been set now
       } else {
-        log.warn("scnotifyurl != null");
         scnotifyurl = null;
       }
 
     } catch (Exception e) {
       log.error(e.getMessage(), e);
-
       if (backoffsc < 3600000)
         backoffsc <<= 1;
       scnotifyurl = null;
