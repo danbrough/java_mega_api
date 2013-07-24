@@ -97,7 +97,7 @@ public class MegaApplication extends Application {
             String password = txtPassword.getText().toString();
 
             try {
-              client.login(username, password);
+              client.login(username, password, null);
             } catch (IOException e) {
               log.error(e.getMessage(), e);
             }

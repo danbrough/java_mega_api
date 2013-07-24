@@ -6,4 +6,5 @@ cd ../mega_api/
 mvn install
 cd ../mega_api_test
 
+#exec mvn -DMEGA_API_KEY=yourApiKey -Dexec.mainClass=org.danbrough.mega.test.MegaTest exec:java
 exec mvn -Dexec.mainClass=org.danbrough.mega.test.MegaTest exec:java

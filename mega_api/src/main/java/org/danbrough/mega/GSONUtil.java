@@ -1,5 +1,6 @@
 package org.danbrough.mega;
 
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 
 import org.danbrough.mega.Node.AccessLevel;
@@ -67,13 +68,16 @@ public class GSONUtil {
 
   }
 
-  public static GsonBuilder getGSONBuilder() {
-    GsonBuilder builder = new GsonBuilder();
-    builder.serializeNulls();
-    builder.registerTypeAdapter(NodeType.class, new NodeTypeSerializer());
-    builder.registerTypeAdapter(AccessLevel.class, new AccessLevelSerializer());
-    builder.registerTypeAdapter(Visibility.class, new VisibilitySerializer());
+  private static GsonBuilder builder = null;
 
+  public static GsonBuilder getGSONBuilder() {
+    if (builder != null)
+      return builder;
+    builder = new GsonBuilder().serializeNulls()
+        .registerTypeAdapter(NodeType.class, new NodeTypeSerializer())
+        .registerTypeAdapter(AccessLevel.class, new AccessLevelSerializer())
+        .registerTypeAdapter(Visibility.class, new VisibilitySerializer())
+        .excludeFieldsWithModifiers(Modifier.TRANSIENT);
     return builder;
   }
 

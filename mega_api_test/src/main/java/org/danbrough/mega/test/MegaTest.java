@@ -1,6 +1,8 @@
 package org.danbrough.mega.test;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import jline.console.ConsoleReader;
@@ -10,6 +12,7 @@ import org.danbrough.mega.AccountDetails;
 import org.danbrough.mega.AccountDetails.UserSession;
 import org.danbrough.mega.Callback;
 import org.danbrough.mega.ExecutorThreadPool;
+import org.danbrough.mega.GSONUtil;
 import org.danbrough.mega.MegaClient;
 import org.danbrough.mega.Node;
 import org.danbrough.mega.ThreadPool;
@@ -18,16 +21,29 @@ public class MegaTest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaTest.class.getSimpleName());
 
+  static final String MEGA_API_KEY = "MEGA_API_KEY";
+
   String appKey;
   ConsoleReader console;
   MegaClient client;
   ThreadPool threadPool;
   FileHistory history;
+  File sessionFile = new File(System.getProperty("user.home"),
+      ".megatest_session");
 
   public MegaTest(String args[]) throws IOException {
     super();
     console = new ConsoleReader();
     console.setPrompt(">> ");
+
+    appKey = System.getProperty(MEGA_API_KEY);
+    if (appKey == null)
+      appKey = System.getenv(MEGA_API_KEY);
+    if (appKey == null) {
+      throw new RuntimeException(
+          MEGA_API_KEY
+              + " not definied as either a system property or in the environment. Visit https://mega.co.nz/#sdk to create your application key");
+    }
 
     File historyFile = new File(System.getProperty("user.home"),
         ".megatest_history");
@@ -37,12 +53,29 @@ public class MegaTest {
 
     threadPool = new ExecutorThreadPool();
 
-    String appKey = "MegaJavaTest";
+    if (sessionFile.exists()) {
+      try {
+        client = GSONUtil.getGSON().fromJson(new FileReader(sessionFile),
+            MegaClient.class);
+      } catch (Exception ex) {
+        log.error("Failed to restore session: " + ex.getMessage(), ex);
+      }
+    }
 
-    File settingsFile = new File(System.getProperty("user.home"),
-        ".mega_test.settings");
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        try {
+          saveSession();
+        } catch (Throwable t) {
+        }
+      }
+    });
 
-    client = new MegaClient(appKey, threadPool);
+    if (client == null)
+      client = new MegaClient();
+    client.setAppKey(appKey);
+    client.setThreadPool(threadPool);
   }
 
   public void printHelp() throws IOException {
@@ -54,6 +87,34 @@ public class MegaTest {
         + "pwd\n" + "lcd [localpath]\n" + "share [path [email [access]]]\n"
         + "export path [del]\n" + "import exportedfilelink#key\n" + "whoami\n"
         + "passwd\n" + "debug\n" + "quit");
+  }
+
+  public void saveSession() {
+    log.error("test:saveSession()");
+    FileWriter output;
+    try {
+
+      log.error("getting json ..");
+
+      String json = GSONUtil.getGSON().toJson(client);
+      log.error("client: {}", json);
+      output = new FileWriter(sessionFile);
+      output.write(json);
+      output.close();
+    } catch (Throwable e) {
+      log.error(e.getMessage(), e);
+    }
+
+  }
+
+  public void cmd_login(String email, String password) throws IOException {
+    client.login(email, password, new Callback<Void>() {
+      @Override
+      public void onResult(Void result) {
+        log.warn("SCSN: {}", client.getScsn());
+        saveSession();
+      }
+    });
   }
 
   public void cmd_quit() {
@@ -134,7 +195,7 @@ public class MegaTest {
           boolean addToHistory = true;
 
           if (cmd.equals("login")) {
-            client.login(words[1], words[2]);
+            cmd_login(words[1], words[2]);
           } else if (cmd.equals("quit")) {
             cmd_quit();
             return;

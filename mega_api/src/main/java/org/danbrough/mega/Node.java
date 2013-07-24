@@ -232,9 +232,17 @@ public class Node {
   }
 
   public void applyKey(MegaClient client) {
-    log.debug("applyKey() {} key: {}", handle, key);
+    log.info("applyKey() {} key: {}", handle, key);
+
+    MegaCrypto crypto = MegaCrypto.get();
+    User me = client.getMe();
+
     if (key == null) {
       log.error("key is null");
+      return;
+    }
+    if (me == null) {
+      log.error("ME IS NULL");
       return;
     }
 
@@ -243,9 +251,24 @@ public class Node {
       return;
     }
 
-    String keys[] = key.split(":");
+    String keys[] = key.split("/");
     for (String key : keys) {
-      log.debug("KEY PART: {}", key);
+      int i = key.indexOf(':');
+      if (i == -1) {
+        log.error("expecing a \":\" in the key [{}]", key);
+        continue;
+      }
+
+      String handle = key.substring(0, i);
+      key = key.substring(i + 1);
+
+      byte bHandle[] = crypto.base64urldecode(handle);
+      log.trace("handle: {} data: {}", handle, key);
+
+      if (bHandle.length == 8) {
+        log.debug("found user handle <{}>", handle);
+      }
+
     }
 
   }
