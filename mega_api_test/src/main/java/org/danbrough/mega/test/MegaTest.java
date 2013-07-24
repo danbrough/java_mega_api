@@ -28,11 +28,11 @@ public class MegaTest {
   MegaClient client;
   ThreadPool threadPool;
   FileHistory history;
-  File sessionFile = new File(System.getProperty("user.home"),
+  static File sessionFile = new File(System.getProperty("user.home"),
       ".megatest_session");
   File currentDir = new File(".").getCanonicalFile();
 
-  public MegaTest(String args[]) throws IOException {
+  public MegaTest() throws IOException {
     super();
     console = new ConsoleReader();
     console.setPrompt(">> ");
@@ -52,17 +52,16 @@ public class MegaTest {
     history = new FileHistory(historyFile);
     console.setHistory(history);
 
-    threadPool = new ExecutorThreadPool();
-
     if (sessionFile.exists()) {
       try {
         client = GSONUtil.getGSON().fromJson(new FileReader(sessionFile),
             MegaClient.class);
       } catch (Exception ex) {
-        log.error("Failed to restore session: " + ex.getMessage(), ex);
+        log.error(ex.getMessage(), ex);
       }
     }
 
+    threadPool = new ExecutorThreadPool();
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
@@ -87,6 +86,9 @@ public class MegaTest {
         + "passwd\n" + "debug\n" + "quit");
   }
 
+  /**
+   * Stops the client, thread pool and flushes the console
+   */
   public synchronized void quit() {
     if (client != null) {
       saveSession();
@@ -153,6 +155,13 @@ public class MegaTest {
       console.println("invalid path: " + newDir.getAbsolutePath());
     }
     console.println(currentDir.getCanonicalPath());
+  }
+
+  public void cmd_lls() throws IOException {
+    for (File file : currentDir.listFiles()) {
+      console.println((file.isDirectory() ? "dir:  \t" : "file: \t")
+          + file.getName() + "\t" + file.length());
+    }
   }
 
   public void cmd_whoami() {
@@ -251,6 +260,8 @@ public class MegaTest {
             console.println(currentDir.getAbsolutePath());
           } else if (cmd.equals("lcd")) {
             cmd_lcd(words[1]);
+          } else if (cmd.equals("lls")) {
+            cmd_lls();
           } else if (cmd.equals("share")) {
             log.error("share not implemented");
           } else if (cmd.equals("export")) {
@@ -298,6 +309,6 @@ public class MegaTest {
   }
 
   public static void main(String[] args) throws IOException {
-    new MegaTest(args).run();
+    new MegaTest().run();
   }
 }

@@ -29,8 +29,8 @@ public class MegaClient {
   private transient static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaClient.class.getSimpleName());
 
-  public static final String API_URL = "https://g.api.mega.co.nz/";
-  public static final String USER_AGENT = "MegaJavaClient-1.0";
+  static final String API_URL = "https://g.api.mega.co.nz/";
+  static final String USER_AGENT = "MegaJavaClient-1.0";
 
   transient MegaCrypto crypto = MegaCrypto.get();
 
@@ -49,6 +49,7 @@ public class MegaClient {
   @SerializedName("sid")
   String sessionID;
 
+  // request id
   char[] reqid;
 
   transient String appkey = "MegaJavaTest";
