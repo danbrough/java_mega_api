@@ -1,4 +1,4 @@
-package org.danbrough.mega.test;
+package org.danbrough.mega;
 
 import java.io.File;
 import java.io.FileReader;
@@ -36,6 +36,13 @@ public class MegaTest {
 
   public MegaTest() throws IOException {
     super();
+
+    log.trace("trace()");
+    log.debug("debug()");
+    log.info("info()");
+    log.warn("warn()");
+    log.error("error()");
+
     console = new ConsoleReader();
 
     console.setPrompt(">> ");

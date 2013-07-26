@@ -17,7 +17,6 @@
 
 	<modules>
 		<module>mega_api</module>
-		<module>mega_api_test</module>
 	</modules>
 
 	<dependencies>
@@ -38,6 +37,7 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>1.0.13</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
