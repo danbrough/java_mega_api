@@ -2,6 +2,7 @@
 */gen/*
 .settings
 *.pydevproject
+/android_mega_api/res/values/appkey.xml
 /android_mega_api/examples
 /android_mega_api_test/bin
 /android_mega_api_test/gen

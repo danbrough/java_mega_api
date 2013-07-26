@@ -30,11 +30,14 @@ public class MegaTest {
   FileHistory history;
   static File sessionFile = new File(System.getProperty("user.home"),
       ".megatest_session");
+  static File apiKeyFile = new File(System.getProperty("user.home"),
+      ".megatest_apikey");
   File currentDir = new File(".").getCanonicalFile();
 
   public MegaTest() throws IOException {
     super();
     console = new ConsoleReader();
+
     console.setPrompt(">> ");
 
     appKey = System.getProperty(MEGA_API_KEY);
@@ -209,10 +212,37 @@ public class MegaTest {
     }
   }
 
+  public void cmd_test1() throws IOException {
+    log.info("cmd_test1();");
+    client.getAccountDetails(true, true, false, false, false, false,
+        new Callback<AccountDetails>() {
+          @Override
+          public void onResult(AccountDetails result) {
+            try {
+              console.println(GSONUtil.getGSON().toJson(result));
+            } catch (IOException e) {
+              log.error(e.getMessage(), e);
+            }
+          }
+        });
+  }
+
+  public void cmd_test2() throws IOException {
+    log.info("cmd_test2();");
+    client.fetchNodes(new Callback<Void>() {
+      @Override
+      public void onResult(Void result) {
+        log.info("me: " + client.getMe());
+      }
+    });
+  }
+
   public void run() throws IOException {
 
     threadPool.start();
     client.start();
+
+    printHelp();
 
     String line;
     try {
@@ -228,8 +258,10 @@ public class MegaTest {
         try {
           if (cmd.equals("login")) {
             cmd_login(words[1], words[2]);
-          } else if (cmd.equals("test")) {
-            cmd_test();
+          } else if (cmd.equals("test1")) {
+            cmd_test1();
+          } else if (cmd.equals("test2")) {
+            cmd_test2();
           } else if (cmd.equals("logout")) {
             cmd_logout();
           } else if (cmd.equals("quit")) {
@@ -290,22 +322,6 @@ public class MegaTest {
     } finally {
       quit();
     }
-  }
-
-  public void cmd_test() throws IOException {
-    log.info("cmd_test();");
-    client.getAccountDetails(true, true, false, false, false, false,
-        new Callback<AccountDetails>() {
-          @Override
-          public void onResult(AccountDetails result) {
-            try {
-              console.println(GSONUtil.getGSON().toJson(result));
-            } catch (IOException e) {
-              log.error(e.getMessage(), e);
-            }
-
-          }
-        });
   }
 
   public static void main(String[] args) throws IOException {

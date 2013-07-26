@@ -161,7 +161,9 @@ public class MegaApplication extends Application {
     threadPool = new ExecutorThreadPool();
     threadPool.start();
 
-    client = new MegaClient("DQcSQK7S", threadPool);
+    client = new MegaClient();
+    client.setAppKey(getString(R.string.app_key));
+    client.setThreadPool(threadPool);
     client.start();
   }
 
@@ -170,6 +172,7 @@ public class MegaApplication extends Application {
     log.info("onTerminate()");
     super.onTerminate();
     client.stop();
+    client = null;
     threadPool.stop();
     threadPool = null;
   }

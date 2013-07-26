@@ -74,4 +74,9 @@ public class User {
     this.email = email;
   }
 
+  @Override
+  public String toString() {
+    return GSONUtil.getGSON().toJson(this);
+  }
+
 }

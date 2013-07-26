@@ -241,6 +241,7 @@ public class Node {
       log.error("key is null");
       return;
     }
+
     if (me == null) {
       log.error("ME IS NULL");
       return;
