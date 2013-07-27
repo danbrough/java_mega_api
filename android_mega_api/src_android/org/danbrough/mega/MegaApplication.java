@@ -26,11 +26,11 @@ public class MegaApplication extends Application {
 
   private static final String PREF_SESSION = "session";
 
-  ThreadPool threadPool;
   protected MegaClient client;
   Handler handler;
   protected Thread uiThread;
   protected MegaActivity activity;
+  protected ThreadPool threadPool;
 
   public MegaApplication() {
     super();
@@ -48,8 +48,26 @@ public class MegaApplication extends Application {
       public void run() {
         if (busyDialog != null)
           return;
-        busyDialog = ProgressDialog.show(activity, null,
-            getString(R.string.please_wait));
+
+        ProgressDialog dialog = new ProgressDialog(activity) {
+          int backPressCount = 0;
+
+          @Override
+          public void onBackPressed() {
+            backPressCount++;
+            if (backPressCount > 1) {
+              dismiss();
+              activity.finish();
+            }
+          }
+        };
+        dialog.setMessage(getString(R.string.please_wait));
+        dialog.setIndeterminate(true);
+        dialog.setCancelable(false);
+        // dialog.setOnCancelListener(cancelListener);
+        dialog.show();
+        busyDialog = dialog;
+        busyDialog.show();
       }
     });
   }
@@ -139,8 +157,12 @@ public class MegaApplication extends Application {
 
   public void logout() {
     log.info("logout();");
-    client.stop();
-    createClient().start();
+    if (client != null) {
+      client.stop();
+      client = null;
+    }
+    getPrefs().edit().remove(PREF_SESSION).commit();
+    startClient();
     onLogout();
   }
 
@@ -189,8 +211,7 @@ public class MegaApplication extends Application {
 
     handler = new Handler();
     uiThread = Thread.currentThread();
-
-    createThreadPool().start();
+    threadPool = createThreadPool();
 
     try {
       client = GSONUtil.getGSON().fromJson(
@@ -199,20 +220,28 @@ public class MegaApplication extends Application {
     } catch (Exception ex) {
     }
 
-    if (client == null)
-      client = createClient();
+    startClient();
+  }
 
+  protected void startClient() {
+    if (client == null)
+      client = new MegaClient();
     client.setAppKey(getString(R.string.app_key));
     client.setThreadPool(threadPool);
     client.start();
   }
 
-  protected MegaClient createClient() {
-    return client = new MegaClient();
+  protected ThreadPool createThreadPool() {
+    threadPool = new ExecutorThreadPool();
+    threadPool.start();
+    return threadPool;
   }
 
-  protected ThreadPool createThreadPool() {
-    return threadPool = new ExecutorThreadPool();
+  protected void destroyThreadPool() {
+    if (threadPool == null)
+      return;
+    threadPool.stop();
+    threadPool = null;
   }
 
   @Override
@@ -225,10 +254,7 @@ public class MegaApplication extends Application {
       client = null;
     }
 
-    if (threadPool != null) {
-      threadPool.stop();
-      threadPool = null;
-    }
+    destroyThreadPool();
   }
 
   public void onActivityCreated(MegaActivity activity, Bundle savedInstanceState) {
@@ -240,11 +266,13 @@ public class MegaApplication extends Application {
   }
 
   public void onActivityResumed(MegaActivity activity) {
-
+    log.info("onActivityResumed()");
+    client.startSC();
   }
 
   public void onActivityPaused(MegaActivity activity) {
-
+    log.info("onActivityPaused()");
+    client.stopSC();
   }
 
   public void onActivityStopped(MegaActivity activity) {
@@ -252,11 +280,11 @@ public class MegaApplication extends Application {
   }
 
   public void onActivitySaveInstanceState(MegaActivity activity, Bundle outState) {
-
+    log.info("onActivitySaveInstanceState() {}", activity);
+    saveSession();
   }
 
   public void onActivityDestroyed(MegaActivity activity) {
-
   }
 
   public boolean isLoggedIn() {

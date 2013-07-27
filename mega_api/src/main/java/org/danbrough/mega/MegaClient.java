@@ -79,6 +79,8 @@ public class MegaClient {
   Map<String, Node> nodes;
   HashMap<String, User> users;
 
+  transient HttpURLConnection scConn;
+
   public MegaClient() {
     super();
   }
@@ -145,6 +147,9 @@ public class MegaClient {
   public synchronized void start() {
     if (running)
       return;
+
+    if (threadPool == null)
+      throw new RuntimeException("Thread pool not provided");
     running = true;
 
     if (sessionID != null) {
@@ -156,7 +161,11 @@ public class MegaClient {
     if (reqid == null)
       reqid = generateID(10);
 
-    new Thread() {
+    startSC();
+
+    threadPool.background(new Runnable() {
+
+      @Override
       public void run() {
         try {
           workerLoop();
@@ -166,7 +175,7 @@ public class MegaClient {
           MegaClient.this.stop();
         }
       }
-    }.start();
+    });
   }
 
   public synchronized void stop() {
@@ -174,17 +183,17 @@ public class MegaClient {
       return;
     log.info("stop();");
     running = false;
-    startedSC = false;
-    log.info("notifying worker..");
     notifyWorker();
-    log.info("stop() finished");
+    stopSC();
   }
 
   @SuppressWarnings("unchecked")
   protected void workerLoop() {
 
+    log.debug("workerLoop();");
+
     if (scsn != null && sessionID != null) {
-      setScsn(scsn);
+      startSC();
     }
 
     synchronized (cmdQueue) {
@@ -200,14 +209,19 @@ public class MegaClient {
 
         if (!cmdQueue.isEmpty()) {
           // commands to send
+          @SuppressWarnings("rawtypes")
           final LinkedList<Command> commands = (LinkedList<Command>) cmdQueue
               .clone();
           cmdQueue.clear();
+
+          if (!running)
+            return;
 
           threadPool.background(new Runnable() {
 
             @Override
             public void run() {
+              log.error("run();");
               try {
                 processRequest(commands);
               } catch (IOException e) {
@@ -225,6 +239,7 @@ public class MegaClient {
       final Callback<AccountDetails> detailsCallback) {
     final AccountDetails details = new AccountDetails();
 
+    log.info("getAccountDetails() running: {}", this.running);
     @SuppressWarnings("rawtypes")
     LinkedList<Command> commands = new LinkedList<Command>();
 
@@ -380,30 +395,28 @@ public class MegaClient {
         url = scnotifyurl;
       } else {
         url = API_URL;
-        url += "sc?sn=";
-        url += scsn;
-        if (sessionID != null)
-          url += "&sid=" + sessionID;
+        url += "sc";
+        url += "?sn=" + scsn;
+        url += "&sid=" + sessionID;
       }
 
-      log.trace("sendSC() url {}", url);
-      final HttpURLConnection conn = (HttpURLConnection) new URL(url.toString())
-          .openConnection();
+      log.debug("sendSC() url {}", url);
+      scConn = (HttpURLConnection) new URL(url.toString()).openConnection();
 
-      conn.setDoInput(true);
-      conn.setDoOutput(false);
-      conn.setRequestProperty("User-Agent", USER_AGENT);
-      conn.setRequestProperty("Content-Type", "application/json");
-      conn.setRequestMethod("POST");
+      scConn.setDoInput(true);
+      scConn.setDoOutput(false);
+      scConn.setRequestProperty("User-Agent", USER_AGENT);
+      scConn.setRequestProperty("Content-Type", "application/json");
+      scConn.setRequestMethod("POST");
 
-      int responseCode = conn.getResponseCode();
-      String encoding = conn.getContentEncoding();
-      int length = conn.getContentLength();
+      int responseCode = scConn.getResponseCode();
+      String encoding = scConn.getContentEncoding();
+      int length = scConn.getContentLength();
 
       log.debug("responseCode: " + responseCode + " encoding: {} length: "
           + length, encoding);
 
-      InputStream input = conn.getInputStream();
+      InputStream input = scConn.getInputStream();
       if ("gzip".equals(encoding))
         input = new GZIPInputStream(input);
 
@@ -419,11 +432,19 @@ public class MegaClient {
       }
 
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+
+      if (!running)
+        return;
+
+      if (startedSC)
+        log.error(e.getMessage(), e);
       if (backoffsc < 3600000)
         backoffsc <<= 1;
       scnotifyurl = null;
     }
+
+    if (!running || !startedSC)
+      return;
 
     threadPool.background(new Runnable() {
 
@@ -456,11 +477,13 @@ public class MegaClient {
 
   public void setScsn(String scsn) {
     this.scsn = scsn;
+    startSC();
+  }
 
-    if (!startedSC) {
+  public void startSC() {
+    if (!startedSC && running && scsn != null && sessionID != null) {
       synchronized (this) {
-        if (!startedSC) {
-          log.info("starting server poll..");
+        if (!startedSC && running) {
           startedSC = true;
           threadPool.background(new Runnable() {
             @Override
@@ -470,6 +493,19 @@ public class MegaClient {
           });
         }
       }
+    }
+  }
+
+  public synchronized void stopSC() {
+    if (!startedSC)
+      return;
+    startedSC = false;
+    try {
+      if (scConn != null) {
+        scConn.disconnect();
+        scConn = null;
+      }
+    } catch (Exception ex) {
     }
   }
 

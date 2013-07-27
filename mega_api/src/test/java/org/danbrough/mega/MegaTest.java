@@ -102,8 +102,10 @@ public class MegaTest {
       } catch (IOException e) {
         log.error(e.getMessage(), e);
       }
-      console = null;
     }
+
+    log.info("quit finished. active count: " + Thread.activeCount());
+
   }
 
   /**

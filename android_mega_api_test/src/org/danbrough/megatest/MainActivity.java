@@ -16,15 +16,20 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 
 public class MainActivity extends MegaActivity {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MainActivity.class.getSimpleName());
 
+  TextView statusText = null;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    statusText = (TextView) findViewById(R.id.txtStatus);
   }
 
   @Override
@@ -41,10 +46,23 @@ public class MainActivity extends MegaActivity {
       @Override
       public void run() {
         boolean loggedIn = application.isLoggedIn();
-        View btnLogin = findViewById(R.id.btnLogin);
-        View btnLogout = findViewById(R.id.btnLogout);
-        btnLogin.setVisibility(loggedIn ? View.GONE : View.VISIBLE);
-        btnLogout.setVisibility(loggedIn ? View.VISIBLE : View.GONE);
+
+        findViewById(R.id.btnLogin).setVisibility(
+            loggedIn ? View.GONE : View.VISIBLE);
+        findViewById(R.id.btnLogout).setVisibility(
+            loggedIn ? View.VISIBLE : View.GONE);
+        findViewById(R.id.btnWhoAmI).setVisibility(
+            loggedIn ? View.VISIBLE : View.GONE);
+
+        StringBuffer status = new StringBuffer();
+        if (loggedIn) {
+          status.append("email: " + application.getClient().getEmail() + "\n");
+          status.append("sessionID: " + application.getClient().getSessionID()
+              + "\n");
+        } else {
+          status.append("not logged in");
+        }
+        setStatus(status);
       }
     });
   }
@@ -94,16 +112,24 @@ public class MainActivity extends MegaActivity {
 
       dialog.setMessage("Press back again if you want to quit.");
       dialog.setCancelable(true);
+      dialog.setCanceledOnTouchOutside(true);
+      dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
 
+        @Override
+        public void onCancel(DialogInterface dialog) {
+          backPressedCount = 0;
+        }
+      });
       dialog.setButton(DialogInterface.BUTTON_POSITIVE, "OK",
           new DialogInterface.OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
+              dialog.cancel();
               backPressedCount = 0;
-              dialog.dismiss();
             }
           });
+
       dialog.show();
     }
   }
@@ -113,16 +139,34 @@ public class MainActivity extends MegaActivity {
     application.getClient().getAccountDetails(true, true, true, true, true,
         false, new Callback<AccountDetails>() {
           @Override
-          public void onResult(final AccountDetails result) {
-            log.warn("got result: {}", result.toString());
+          public void onResult(final AccountDetails details) {
+            log.info("onResult(): details:{}", details.toString());
             runOnUiThread(new Runnable() {
               public void run() {
-                application.createAlertDialog().setMessage(result.toString())
-                    .show();
+                application
+                    .createAlertDialog()
+                    .setMessage(details.toString())
+                    .setPositiveButton(R.string.ok,
+                        new DialogInterface.OnClickListener() {
+
+                          @Override
+                          public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                          }
+                        }).show();
               }
             });
           }
         });
+  }
 
+  public void setStatus(final CharSequence msg) {
+    runOnUiThread(new Runnable() {
+
+      @Override
+      public void run() {
+        statusText.setText(msg);
+      }
+    });
   }
 }
