@@ -2,5 +2,6 @@
 <resources>
 
     <string name="app_name">Mega-Api Test</string>
+    <string name="label_whoami">Who Am I?</string>
 
 </resources>

@@ -66,4 +66,12 @@ public class MegaActivity extends Activity {
     application.onActivityDestroyed(this);
   }
 
+  protected void onLogout() {
+    log.info("onLogout();");
+  }
+
+  protected void onLogin() {
+    log.info("onLogin();");
+  }
+
 }

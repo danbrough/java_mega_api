@@ -1,6 +1,7 @@
 <resources>
 
-<!--     <string name="app_key">.. put your app key here ..see: https://mega.co.nz/#sdk</string> -->
+    <!-- put your app key here ..see: https://mega.co.nz/#sdk -->
+    <string name="app_key">MegaJavaTest</string>
     <string name="app_name">Android Mega API</string>
     <string name="username">Username</string>
     <string name="password">Password</string>

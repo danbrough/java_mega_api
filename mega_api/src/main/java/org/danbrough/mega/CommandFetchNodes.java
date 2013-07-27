@@ -4,13 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.danbrough.mega.Node.ShareReadMode;
+import org.danbrough.mega.User.Visibility;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-public class CommandFetchNodes extends Command {
+public class CommandFetchNodes extends Command<Void> {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(CommandFetchNodes.class.getSimpleName());
 
@@ -20,9 +21,10 @@ public class CommandFetchNodes extends Command {
   HashMap<String, Node> nodes;
   HashMap<String, User> users;
   String scsn;
+  User me;
 
-  public CommandFetchNodes(MegaClient client) {
-    super("f");
+  public CommandFetchNodes(MegaClient client, Callback<Void> callback) {
+    super("f", callback);
     this.client = client;
     addArg("c", 1);
     addArg("r", 1);
@@ -91,6 +93,8 @@ public class CommandFetchNodes extends Command {
       User user = gson.fromJson(o, User.class);
       users.put(user.getHandle(), user);
       log.debug("readUser() {} as {}", o, gson.toJson(user));
+      if (user.getVisibility() == Visibility.ME)
+        me = user;
     }
   }
 
@@ -147,6 +151,8 @@ public class CommandFetchNodes extends Command {
 
     updateClient();
 
+    onResult(null);
+
   }
 
   protected void updateClient() {
@@ -162,7 +168,9 @@ public class CommandFetchNodes extends Command {
       client.setRubbishNode(rubbishNode);
       client.setNodes(nodes);
       client.setUsers(users);
+      client.setMe(me);
 
+      client.setEmail(me.getEmail());
       client.applyKeys();
     }
 

@@ -8,14 +8,7 @@ import java.io.IOException;
 import jline.console.ConsoleReader;
 import jline.console.history.FileHistory;
 
-import org.danbrough.mega.AccountDetails;
 import org.danbrough.mega.AccountDetails.UserSession;
-import org.danbrough.mega.Callback;
-import org.danbrough.mega.ExecutorThreadPool;
-import org.danbrough.mega.GSONUtil;
-import org.danbrough.mega.MegaClient;
-import org.danbrough.mega.Node;
-import org.danbrough.mega.ThreadPool;
 
 public class MegaTest {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
@@ -28,23 +21,16 @@ public class MegaTest {
   MegaClient client;
   ThreadPool threadPool;
   FileHistory history;
-  static File sessionFile = new File(System.getProperty("user.home"),
-      ".megatest_session");
-  static File apiKeyFile = new File(System.getProperty("user.home"),
-      ".megatest_apikey");
+
+  static final File confDir = new File(System.getProperty("user.dir"));;
+  static final File sessionFile = new File(confDir, "megatest_session");
+
   File currentDir = new File(".").getCanonicalFile();
 
   public MegaTest() throws IOException {
     super();
 
-    log.trace("trace()");
-    log.debug("debug()");
-    log.info("info()");
-    log.warn("warn()");
-    log.error("error()");
-
     console = new ConsoleReader();
-
     console.setPrompt(">> ");
 
     appKey = System.getProperty(MEGA_API_KEY);
@@ -56,8 +42,7 @@ public class MegaTest {
               + " not definied as either a system property or in the environment. Visit https://mega.co.nz/#sdk to create your application key");
     }
 
-    File historyFile = new File(System.getProperty("user.home"),
-        ".megatest_history");
+    File historyFile = new File(confDir, "megatest_history");
     log.warn("writing command history to {}", historyFile);
     history = new FileHistory(historyFile);
     console.setHistory(history);
@@ -121,6 +106,9 @@ public class MegaTest {
     }
   }
 
+  /**
+   * Persist the client to the sessionFile
+   */
   public void saveSession() {
     FileWriter output;
     try {
@@ -131,7 +119,7 @@ public class MegaTest {
       log.error(e.getMessage(), e);
     }
 
-    log.trace("session saved to {}", sessionFile);
+    log.warn("session saved to {}", sessionFile);
   }
 
   public void cmd_login(String email, String password) throws IOException {
@@ -239,7 +227,7 @@ public class MegaTest {
     client.fetchNodes(new Callback<Void>() {
       @Override
       public void onResult(Void result) {
-        log.info("me: " + client.getMe());
+        log.info("me: " + client.getMe() + " email: " + client.getEmail());
       }
     });
   }

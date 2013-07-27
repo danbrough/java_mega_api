@@ -5,15 +5,12 @@
  * and is available at http://www.gnu.org/licenses/gpl.html
  * 
  ******************************************************************************/
-package org.danbrough.logback;
+package org.danbrough.megatest;
 
-import ch.qos.logback.classic.PatternLayout;
+import org.danbrough.mega.MegaApplication;
 
-public class ColourConsoleAppender<E> extends
-    ch.qos.logback.core.ConsoleAppender<E> {
+public class MegaTestApplication extends MegaApplication {
+  // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
+  // .getLogger(MegaTestApplication.class.getSimpleName());
 
-  static {
-    PatternLayout.defaultConverterMap.put("highlight",
-        ColourConverter.class.getName());
-  }
 }

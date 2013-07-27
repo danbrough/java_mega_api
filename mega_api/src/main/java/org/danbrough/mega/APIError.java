@@ -1,5 +1,7 @@
 package org.danbrough.mega;
 
+import java.util.ResourceBundle;
+
 public enum APIError {
   API_OK(0), // no error
   API_EINTERNAL(-1), // internal error
@@ -44,6 +46,15 @@ public enum APIError {
   }
 
   public String getMessage() {
+    ResourceBundle props = ResourceBundle.getBundle(getClass().getName());
+    try {
+      return props.getString(name());
+    } catch (Exception ex) {
+      return "Unknown api error: " + code;
+    }
+  }
+
+  public String getMessage2() {
     switch (this) {
     case API_OK:
       return "No error";

@@ -5,14 +5,19 @@
     android:layout_height="fill_parent"
     android:gravity="center"
     android:orientation="vertical" >
-    
-    
+
     <Button
         android:id="@+id/btnLogin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="login"
         android:text="@string/login" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="cmdWhoAmi"
+        android:text="@string/label_whoami" />
 
     <Button
         android:id="@+id/btnLogout"

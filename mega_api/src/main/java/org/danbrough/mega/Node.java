@@ -1,5 +1,6 @@
 package org.danbrough.mega;
 
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 
 public class Node {
@@ -72,46 +73,53 @@ public class Node {
   }
 
   @SerializedName("h")
-  String handle;
+  private String handle;
 
   @SerializedName("p")
-  String parent;
+  private String parent;
 
   @SerializedName("t")
-  NodeType nodeType;
+  private NodeType nodeType;
 
   @SerializedName("u")
-  String user;
+  private String user;
 
   @SerializedName("a")
-  String attributes;
+  private String attributes;
 
   @SerializedName("k")
-  String key;
+  private String key;
 
   @SerializedName("fa")
-  String fileAttributes;
+  private String fileAttributes;
 
   @SerializedName("s")
-  int size;
+  private int size;
 
   @SerializedName("tm")
-  int lastModified;
+  private int lastModified;
 
   @SerializedName("ts")
-  int timeStamp;
+  private int timeStamp;
 
   @SerializedName("r")
   AccessLevel accessLevel;
 
   @SerializedName("sk")
-  String sharingKey;
+  private String sharingKey;
 
   @SerializedName("su")
-  String sharingUser;
+  private String sharingUser;
+
+  @SerializedName("name")
+  private String name;
 
   public Node() {
     super();
+  }
+
+  public String getName() {
+    return name;
   }
 
   public String getHandle() {
@@ -252,22 +260,63 @@ public class Node {
       return;
     }
 
+    String k = null;
     String keys[] = key.split("/");
-    for (String key : keys) {
-      int i = key.indexOf(':');
+    for (String keyString : keys) {
+      int i = keyString.indexOf(':');
       if (i == -1) {
-        log.error("expecing a \":\" in the key [{}]", key);
+        log.error("expecting a \":\" in the key [{}]", keyString);
         continue;
       }
 
-      String handle = key.substring(0, i);
-      key = key.substring(i + 1);
+      String handle = keyString.substring(0, i);
+      k = keyString.substring(i + 1);
 
       byte bHandle[] = crypto.base64urldecode(handle);
-      log.trace("handle: {} data: {}", handle, key);
+      log.trace("handle: {} data: {}", handle, k);
 
       if (bHandle.length == 8) {
         log.debug("found user handle <{}>", handle);
+
+        if (handle.equals(me.handle)) {
+          // found key
+          break;
+        }
+      }
+
+      k = null;
+    }
+
+    if (k != null) {
+      log.debug("decrypting attrs with key {}", k);
+      byte master_key[] = client.getMasterKey();
+      if (master_key == null) {
+        log.error("No master key");
+        return;
+      }
+      byte bkey[] = crypto.base64urldecode(k);
+      bkey = crypto.decrypt_key(bkey, master_key);
+
+      log.debug("bkey.length " + bkey.length);
+      if (nodeType == NodeType.FILENODE) {
+        byte new_key[] = new byte[16];
+        for (int j = 0; j < new_key.length; j++) {
+          new_key[j] = (byte) (bkey[j] ^ bkey[j + 16]);
+        }
+        bkey = new_key;
+      }
+
+      String json = crypto.decrypt_attrs(attributes, bkey);
+      log.info("json: {}", json);
+      if (!json.startsWith("MEGA")) {
+        log.error("expecting MEGA prefix");
+        return;
+      }
+      json = json.substring(4);
+      JsonObject attrs = GSONUtil.getGSON().fromJson(json, JsonObject.class);
+
+      if (attrs.has("n")) {
+        this.name = attrs.get("n").getAsString();
       }
 
     }

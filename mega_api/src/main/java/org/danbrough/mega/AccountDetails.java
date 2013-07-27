@@ -6,8 +6,8 @@ import java.util.List;
 import com.google.gson.JsonArray;
 
 public class AccountDetails {
-  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
-      .getLogger(AccountDetails.class.getSimpleName());
+  // private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
+  // .getLogger(AccountDetails.class.getSimpleName());
 
   public enum UserType {
     NORMAL(0), PROFESSIONAL(1);
@@ -29,23 +29,6 @@ public class AccountDetails {
     }
   }
 
-  // while (client->json.enterarray()) {
-  // int t = details->sessions.size();
-  // details->sessions.resize(t + 1);
-  //
-  // details->sessions[t].timestamp = client->json.getint();
-  // details->sessions[t].mru = client->json.getint();
-  // client->json.storestring(&details->sessions[t].useragent);
-  //
-  // client->json.storestring(&details->sessions[t].ip);
-  //
-  // const char* country = client->json.getvalue();
-  // memcpy(details->sessions[t].country, country ? country : "\0\0", 2);
-  //
-  // details->sessions[t].current = client->json.getint();
-  //
-  // client->json.leavearray();
-  // }
   public static class UserSession {
     int timeStamp;
     int mru;
@@ -118,13 +101,13 @@ public class AccountDetails {
   }
 
   List<UserSession> sessions = new LinkedList<UserSession>();
-  private int storageUsed;
+  private long storageUsed;
 
   // total storage quota
-  private int totalStorage;
-  private int transferUsed;
-  private int thirdPartyTransfer;
-  private int totalTransfer;
+  private long totalStorage;
+  private long transferUsed;
+  private long thirdPartyTransfer;
+  private long totalTransfer;
 
   // percentage of transfer allocated for serving
 
@@ -151,43 +134,43 @@ public class AccountDetails {
     }
   }
 
-  public void setStorageUsed(int storageUsed) {
+  public void setStorageUsed(long storageUsed) {
     this.storageUsed = storageUsed;
   }
 
-  public int getStorageUsed() {
+  public long getStorageUsed() {
     return storageUsed;
   }
 
-  public void setTotalStorage(int totalStorage) {
+  public void setTotalStorage(long totalStorage) {
     this.totalStorage = totalStorage;
   }
 
-  public int getTotalStorage() {
+  public long getTotalStorage() {
     return totalStorage;
   }
 
-  public void setTransferUsed(int transferUsed) {
+  public void setTransferUsed(long transferUsed) {
     this.transferUsed = transferUsed;
   }
 
-  public int getTransferUsed() {
+  public long getTransferUsed() {
     return transferUsed;
   }
 
-  public void setThirdPartyTransfer(int thirdPartyTransfer) {
+  public void setThirdPartyTransfer(long thirdPartyTransfer) {
     this.thirdPartyTransfer = thirdPartyTransfer;
   }
 
-  public int getThirdPartyTransfer() {
+  public long getThirdPartyTransfer() {
     return thirdPartyTransfer;
   }
 
-  public void setTotalTransfer(int totalTransfer) {
+  public void setTotalTransfer(long totalTransfer) {
     this.totalTransfer = totalTransfer;
   }
 
-  public int getTotalTransfer() {
+  public long getTotalTransfer() {
     return totalTransfer;
   }
 
@@ -230,6 +213,14 @@ public class AccountDetails {
       String amount = aa.get(0).getAsString();
       String currency = aa.get(1).getAsString();
       balance.add(new BalanceEntry(amount, currency));
+    }
+  }
+
+  public String toString() {
+    try {
+      return GSONUtil.getGSON().toJson(this);
+    } catch (Exception ex) {
+      return ex.getMessage();
     }
   }
 

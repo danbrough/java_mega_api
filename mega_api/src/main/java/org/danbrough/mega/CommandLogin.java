@@ -5,15 +5,16 @@ import java.math.BigInteger;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-public class CommandLogin extends Command {
+public class CommandLogin extends Command<Void> {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(CommandLogin.class.getSimpleName());
 
   MegaClient client;
   String password;
 
-  public CommandLogin(MegaClient client, String password) {
-    super("us");
+  public CommandLogin(MegaClient client, String password,
+      Callback<Void> callback) {
+    super("us", callback);
     this.client = client;
     this.password = password;
     addArg("user", client.getEmail());
@@ -99,6 +100,8 @@ public class CommandLogin extends Command {
     // ctx.setSid(sid);
 
     client.setSessionID(sSid);
+
+    onResult(null);
 
   }
 }

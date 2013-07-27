@@ -15,10 +15,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
-
-import org.danbrough.mega.User.Visibility;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -29,12 +28,20 @@ public class MegaClient {
   private transient static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaClient.class.getSimpleName());
 
-  static final String API_URL = "https://g.api.mega.co.nz/";
-  static final String USER_AGENT = "MegaJavaClient-1.0";
+  static final String API_URL;
+  static final String USER_AGENT;
+
+  static {
+    ResourceBundle properties = ResourceBundle.getBundle(MegaClient.class
+        .getName());
+    API_URL = properties.getString("apiPath");
+    USER_AGENT = properties.getString("userAgent");
+  }
 
   transient MegaCrypto crypto = MegaCrypto.get();
 
   transient Node currentFolder = null;
+  @SuppressWarnings("rawtypes")
   transient LinkedList<Command> cmdQueue = new LinkedList<Command>();
 
   byte passwordKey[];
@@ -98,8 +105,7 @@ public class MegaClient {
 
     this.email = email.toLowerCase(Locale.getDefault());
 
-    enqueueCommand(new CommandLogin(this, password) {
-
+    enqueueCommand(new CommandLogin(this, password, callback) {
       @Override
       public void processResponse(JsonElement e) throws Exception {
         super.processResponse(e);
@@ -110,31 +116,26 @@ public class MegaClient {
 
   public void fetchNodes(final Callback<Void> callback) throws IOException {
     log.info("fetchNodes();");
-
-    enqueueCommand(new CommandFetchNodes(this) {
-      @Override
-      public void processResponse(JsonElement e) throws Exception {
-        super.processResponse(e);
-        if (callback != null)
-          callback.onResult(null);
-      }
-    });
+    enqueueCommand(new CommandFetchNodes(this, callback));
   }
 
-  public void enqueueCommand(Command cmd) {
+  public void enqueueCommand(@SuppressWarnings("rawtypes") Command cmd) {
     synchronized (cmdQueue) {
       cmdQueue.addLast(cmd);
       cmdQueue.notify();
     }
   }
 
-  public void enqueueCommands(List<Command> commands) {
+  public void enqueueCommands(
+      @SuppressWarnings("rawtypes") List<Command> commands) {
     synchronized (cmdQueue) {
-      while (!commands.isEmpty()) {
-        cmdQueue.addLast(commands.remove(0));
-      }
+      cmdQueue.addAll(commands);
       cmdQueue.notify();
     }
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
   }
 
   public String getEmail() {
@@ -220,9 +221,11 @@ public class MegaClient {
   }
 
   public void getAccountDetails(boolean storage, boolean transfer, boolean pro,
-      boolean transactions, boolean purchases, boolean sessions,
+      boolean transactions, boolean purchases, final boolean sessions,
       final Callback<AccountDetails> detailsCallback) {
     final AccountDetails details = new AccountDetails();
+
+    @SuppressWarnings("rawtypes")
     LinkedList<Command> commands = new LinkedList<Command>();
 
     // if (transactions)
@@ -231,18 +234,23 @@ public class MegaClient {
     // reqs[r].add(new CommandGetUserPurchases(this, ad));
 
     commands.addLast(new CommandGetUserQuota(this, details, storage, transfer,
-        pro));
+        pro) {
+      @Override
+      public void processResponse(JsonElement e) throws Exception {
+        super.processResponse(e);
+        if (!sessions)
+          detailsCallback.onResult(details);
+      }
+    });
 
     log.warn("transactions,purchases not implemented");
 
     if (sessions) {
-      commands.addLast(new Command("usl") {
+      commands.addLast(new Command<AccountDetails>("usl", detailsCallback) {
         @Override
         public void processResponse(JsonElement e) throws Exception {
           details.setSessions(e.getAsJsonArray());
-          if (detailsCallback != null) {
-            detailsCallback.onResult(details);
-          }
+          onResult(details);
         }
       });
     }
@@ -438,6 +446,10 @@ public class MegaClient {
     this.masterKey = masterKey;
   }
 
+  public byte[] getMasterKey() {
+    return masterKey;
+  }
+
   public void setPrivateKey(BigInteger[] rsa_private_key) {
     this.privateKey = rsa_private_key;
   }
@@ -498,17 +510,11 @@ public class MegaClient {
   }
 
   public User getMe() {
-    if (me != null)
-      return me;
-    if (users != null) {
-      for (User user : users.values()) {
-        if (user.getVisibility() == Visibility.ME) {
-          me = user;
-          return me;
-        }
-      }
-    }
-    return null;
+    return me;
+  }
+
+  public void setMe(User me) {
+    this.me = me;
   }
 
   public void setRubbishNode(Node rubbishNode) {
