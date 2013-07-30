@@ -9,6 +9,7 @@ package org.danbrough.mega;
 
 import java.io.IOException;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
 import android.app.ProgressDialog;
@@ -26,10 +27,11 @@ public class MegaApplication extends Application {
 
   private static final String PREF_SESSION = "session";
 
-  protected MegaClient client;
+  protected AndroidClient client;
   Handler handler;
   protected Thread uiThread;
-  protected MegaActivity activity;
+  protected Activity activity;
+  protected MegaListener listener;
   protected ThreadPool threadPool;
 
   public MegaApplication() {
@@ -214,10 +216,14 @@ public class MegaApplication extends Application {
     threadPool = createThreadPool();
 
     try {
-      client = GSONUtil.getGSON().fromJson(
-          getPrefs().getString(PREF_SESSION, null), MegaClient.class);
+      String json = getPrefs().getString(PREF_SESSION, null);
+      if (json != null) {
+        client = GSONUtil.getGSON().fromJson(
+            getPrefs().getString(PREF_SESSION, null), AndroidClient.class);
+      }
 
-    } catch (Exception ex) {
+    } catch (Throwable ex) {
+      log.error("failed to restore session", ex);
     }
 
     startClient();
@@ -225,7 +231,8 @@ public class MegaApplication extends Application {
 
   protected void startClient() {
     if (client == null)
-      client = new MegaClient();
+      client = new AndroidClient();
+    client.setApplication(this);
     client.setAppKey(getString(R.string.app_key));
     client.setThreadPool(threadPool);
     client.start();
@@ -257,34 +264,36 @@ public class MegaApplication extends Application {
     destroyThreadPool();
   }
 
-  public void onActivityCreated(MegaActivity activity, Bundle savedInstanceState) {
+  public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
     this.activity = activity;
+    if (activity instanceof MegaListener)
+      listener = (MegaListener) activity;
   }
 
-  public void onActivityStarted(MegaActivity activity) {
+  public void onActivityStarted(Activity activity) {
 
   }
 
-  public void onActivityResumed(MegaActivity activity) {
+  public void onActivityResumed(Activity activity) {
     log.info("onActivityResumed()");
     client.startSC();
   }
 
-  public void onActivityPaused(MegaActivity activity) {
+  public void onActivityPaused(Activity activity) {
     log.info("onActivityPaused()");
     client.stopSC();
   }
 
-  public void onActivityStopped(MegaActivity activity) {
+  public void onActivityStopped(Activity activity) {
 
   }
 
-  public void onActivitySaveInstanceState(MegaActivity activity, Bundle outState) {
+  public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
     log.info("onActivitySaveInstanceState() {}", activity);
-    saveSession();
+    saveSession(null);
   }
 
-  public void onActivityDestroyed(MegaActivity activity) {
+  public void onActivityDestroyed(Activity activity) {
   }
 
   public boolean isLoggedIn() {
@@ -292,19 +301,38 @@ public class MegaApplication extends Application {
   }
 
   protected void onLogin() {
-    activity.onLogin();
-    saveSession();
+    if (listener != null)
+      listener.onLogin();
+    saveSession(null);
   }
 
   protected void onLogout() {
-    activity.onLogout();
+    if (listener != null)
+      listener.onLogout();
+  }
+
+  public void onFolderChanged(Node folder) {
+    if (listener != null)
+      listener.onFolderChanged(folder);
+
+  }
+
+  protected void onNodesModified() {
+    saveSession(new Callback<Void>() {
+      @Override
+      public void onResult(Void result) {
+        if (listener != null)
+          listener.onNodesModified();
+      }
+    });
+
   }
 
   public void runInBackground(Runnable runnable) {
     threadPool.background(runnable);
   }
 
-  public void saveSession() {
+  public void saveSession(final Callback<Void> callback) {
     runInBackground(new Runnable() {
 
       @Override
@@ -317,12 +345,21 @@ public class MegaApplication extends Application {
           getPrefs().edit().putString(PREF_SESSION, json).commit();
         } catch (Exception ex) {
           displayError(ex);
+        } finally {
+          if (callback != null)
+            callback.onResult(null);
         }
       }
     });
   }
 
-  public MegaClient getClient() {
+  public AndroidClient getClient() {
     return client;
   }
+
+  public void setFolder(Node node) {
+    log.info("setFolder(): {}", node);
+    client.setCurrentFolder(node);
+  }
+
 }

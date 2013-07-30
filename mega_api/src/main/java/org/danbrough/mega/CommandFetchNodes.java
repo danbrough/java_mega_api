@@ -174,6 +174,8 @@ public class CommandFetchNodes extends Command<Void> {
       client.applyKeys();
     }
 
+    client.onNodesModified();
+
     nodes = null;
     users = null;
   }

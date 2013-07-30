@@ -13,5 +13,7 @@
     <string name="msg_an_error_occurred">An error occurred</string>
     <string name="msg_invalid_username">Invalid username</string>
     <string name="msg_invalid_password">Invalid password</string>
+    
+    <string name="file_icon">File Icon</string>
 
 </resources>

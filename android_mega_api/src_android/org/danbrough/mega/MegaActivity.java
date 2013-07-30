@@ -10,7 +10,7 @@ package org.danbrough.mega;
 import android.app.Activity;
 import android.os.Bundle;
 
-public class MegaActivity extends Activity {
+public class MegaActivity extends Activity implements MegaListener {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory
       .getLogger(MegaActivity.class.getSimpleName());
 
@@ -66,12 +66,24 @@ public class MegaActivity extends Activity {
     application.onActivityDestroyed(this);
   }
 
-  protected void onLogout() {
+  @Override
+  public void onLogout() {
     log.info("onLogout();");
   }
 
-  protected void onLogin() {
+  @Override
+  public void onLogin() {
     log.info("onLogin();");
+  }
+
+  @Override
+  public void onNodesModified() {
+    log.info("onFilesModified();");
+  }
+
+  @Override
+  public void onFolderChanged(Node folder) {
+    log.info("onFolderChanged();");
   }
 
 }

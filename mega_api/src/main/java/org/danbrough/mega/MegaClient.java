@@ -40,7 +40,8 @@ public class MegaClient {
 
   transient MegaCrypto crypto = MegaCrypto.get();
 
-  transient Node currentFolder = null;
+  Node currentFolder = null;
+
   @SuppressWarnings("rawtypes")
   transient LinkedList<Command> cmdQueue = new LinkedList<Command>();
 
@@ -531,6 +532,8 @@ public class MegaClient {
 
   public void setRootNode(Node rootNode) {
     this.rootNode = rootNode;
+    if (currentFolder == null)
+      currentFolder = rootNode;
   }
 
   public Node getIncomingNode() {
@@ -570,14 +573,16 @@ public class MegaClient {
   }
 
   public List<Node> getChildren() {
-    if (nodes == null)
+    return getChildren(currentFolder);
+  }
+
+  public List<Node> getChildren(Node folder) {
+    if (nodes == null || folder == null)
       return Collections.emptyList();
-    if (currentFolder == null)
-      currentFolder = rootNode;
+
     LinkedList<Node> children = new LinkedList<Node>();
     for (Node n : nodes.values()) {
-      if (n.getParent() != null
-          && n.getParent().equals(currentFolder.getHandle())) {
+      if (n.getParent() != null && n.getParent().equals(folder.getHandle())) {
         children.add(n);
       }
     }
@@ -589,7 +594,7 @@ public class MegaClient {
   }
 
   public void setCurrentFolder(Node folder) {
-    this.currentFolder = folder;
+    this.currentFolder = folder == null ? rootNode : folder;
   }
 
   public void applyKeys() {
@@ -609,6 +614,22 @@ public class MegaClient {
 
   public void setThreadPool(ThreadPool threadPool) {
     this.threadPool = threadPool;
+  }
+
+  public void onNodesModified() {
+    log.info("onNodesModified()");
+  }
+
+  public boolean isLoggedIn() {
+    return sessionID != null;
+  }
+
+  public Node getNode(String handle) {
+    for (Node node : nodes.values()) {
+      if (node.getHandle().equals(handle))
+        return node;
+    }
+    return null;
   }
 
 }
