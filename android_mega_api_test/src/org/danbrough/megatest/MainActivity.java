@@ -35,6 +35,7 @@ public class MainActivity extends MegaFragmentActivity {
 
   TextView statusText = null;
   FilesFragment filesFragment;
+  Thread uiThread = Thread.currentThread();
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +89,9 @@ public class MainActivity extends MegaFragmentActivity {
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     switch (item.getItemId()) {
+    case android.R.id.home:
+      onBackPressed();
+      return true;
     case R.string.login:
       application.createLoginDialog().show();
       return true;
@@ -159,13 +163,29 @@ public class MainActivity extends MegaFragmentActivity {
     filesFragment.refresh();
   }
 
+  private boolean firstUpdate = false;
+
   @Override
-  public void onFolderChanged(Node folder) {
-    log.info("onFolderChanged(): {} thread: {}", folder, Thread.currentThread());
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
-      _onFolderChanged_v11(folder);
+  public void onFolderChanged(final Node folder) {
+    log.info("onFolderChanged(): {}", folder);
+
+    if (firstUpdate) {
+      firstUpdate = false;
+      return;
     }
-    filesFragment.setFolder(folder);
+
+    runOnUiThread(new Runnable() {
+
+      @Override
+      public void run() {
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+          _onFolderChanged_v11(folder);
+        }
+        filesFragment.setFolder(folder);
+      }
+    });
+
   }
 
   @SuppressLint("InlinedApi")
