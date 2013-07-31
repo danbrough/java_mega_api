@@ -101,6 +101,45 @@ public class MegaApplication extends Application {
     return builder;
   }
 
+  public AlertDialog.Builder createPromptDialog(int message,
+      DialogInterface.OnClickListener positive,
+      DialogInterface.OnClickListener negative) {
+    return createPromptDialog(getString(message), positive, negative);
+  }
+
+  public AlertDialog.Builder createPromptDialog(String message,
+      final DialogInterface.OnClickListener positive,
+      final DialogInterface.OnClickListener negative) {
+
+    AlertDialog.Builder builder = createAlertDialog();
+    builder.setMessage(message);
+
+    builder.setPositiveButton(R.string.ok,
+        new DialogInterface.OnClickListener() {
+
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            if (positive == null)
+              dialog.dismiss();
+            else
+              positive.onClick(dialog, which);
+          }
+        });
+    builder.setNegativeButton(R.string.cancel,
+        new DialogInterface.OnClickListener() {
+
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            if (negative == null)
+              dialog.dismiss();
+            else
+              negative.onClick(dialog, which);
+          }
+        });
+
+    return builder;
+  }
+
   public AlertDialog.Builder createLoginDialog() {
     AlertDialog.Builder builder = createAlertDialog();
     builder.setCancelable(false);
@@ -360,6 +399,11 @@ public class MegaApplication extends Application {
   public void setFolder(Node node) {
     log.info("setFolder(): {}", node);
     client.setCurrentFolder(node);
+  }
+
+  public void download(Node item) {
+    log.info("download() {}", item);
+
   }
 
 }

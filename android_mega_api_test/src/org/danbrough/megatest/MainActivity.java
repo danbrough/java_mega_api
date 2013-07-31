@@ -45,7 +45,6 @@ public class MainActivity extends MegaFragmentActivity {
     statusText = (TextView) findViewById(R.id.txtStatus);
     filesFragment = (FilesFragment) getSupportFragmentManager()
         .findFragmentById(R.id.filesFragment);
-
   }
 
   @Override
@@ -74,10 +73,10 @@ public class MainActivity extends MegaFragmentActivity {
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
-    log.info("onCreateOptionsMenu();");
+    log.error("onCreateOptionsMenu();");
 
-    int actions[] = { R.string.login, R.string.label_updatefiles,
-        R.string.label_whoami, R.string.logout };
+    int actions[] = { R.string.login, R.string.logout,
+        R.string.label_updatefiles, R.string.label_whoami };
     for (int action : actions) {
       actionMenuItems.put(action, addMenu(menu, action));
     }
@@ -93,7 +92,7 @@ public class MainActivity extends MegaFragmentActivity {
       onBackPressed();
       return true;
     case R.string.login:
-      application.createLoginDialog().show();
+      login();
       return true;
     case R.string.label_whoami:
       whoami();
@@ -102,7 +101,7 @@ public class MainActivity extends MegaFragmentActivity {
       updateFiles();
       return true;
     case R.string.logout:
-      application.logout();
+      logout();
       return true;
     }
     return super.onOptionsItemSelected(item);
@@ -111,7 +110,9 @@ public class MainActivity extends MegaFragmentActivity {
   @Override
   protected void onResume() {
     super.onResume();
-    backPressedCount = 0;
+    if (dialogOnBackPressed != null)
+      dialogOnBackPressed.cancel();
+    configureLayout();
   }
 
   private void configureLayout() {
@@ -122,8 +123,10 @@ public class MainActivity extends MegaFragmentActivity {
       public void run() {
         boolean loggedIn = application.isLoggedIn();
 
-        actionMenuItems.get(R.string.login).setVisible(!loggedIn);
-        actionMenuItems.get(R.string.logout).setVisible(loggedIn);
+        if (!actionMenuItems.isEmpty()) {
+          actionMenuItems.get(R.string.login).setVisible(!loggedIn);
+          actionMenuItems.get(R.string.logout).setVisible(loggedIn);
+        }
 
         StringBuffer status = new StringBuffer();
         if (loggedIn) {
@@ -202,7 +205,7 @@ public class MainActivity extends MegaFragmentActivity {
     }
   }
 
-  int backPressedCount = 0;
+  private AlertDialog dialogOnBackPressed = null;
 
   @Override
   public void onBackPressed() {
@@ -218,37 +221,37 @@ public class MainActivity extends MegaFragmentActivity {
       }
     }
 
-    backPressedCount++;
-    if (backPressedCount == 1) {
-      AlertDialog dialog = new AlertDialog(this, false, null) {
+    if (dialogOnBackPressed == null) {
+      dialogOnBackPressed = new AlertDialog(this, false, null) {
         @Override
         public void onBackPressed() {
           super.onBackPressed();
+          cancel();
           MainActivity.this.finish();
         }
       };
 
-      dialog.setMessage("Press back again if you want to quit.");
-      dialog.setCancelable(true);
-      dialog.setCanceledOnTouchOutside(true);
-      dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+      dialogOnBackPressed.setMessage("Press back again if you want to quit.");
+      dialogOnBackPressed.setCancelable(true);
+      dialogOnBackPressed.setCanceledOnTouchOutside(true);
+      dialogOnBackPressed
+          .setOnCancelListener(new DialogInterface.OnCancelListener() {
 
-        @Override
-        public void onCancel(DialogInterface dialog) {
-          backPressedCount = 0;
-        }
-      });
-      dialog.setButton(DialogInterface.BUTTON_POSITIVE, getString(R.string.ok),
-          new DialogInterface.OnClickListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+              dialogOnBackPressed = null;
+            }
+          });
+      dialogOnBackPressed.setButton(DialogInterface.BUTTON_POSITIVE,
+          getString(R.string.ok), new DialogInterface.OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
               dialog.cancel();
-              backPressedCount = 0;
             }
           });
 
-      dialog.show();
+      dialogOnBackPressed.show();
     }
   }
 
@@ -301,5 +304,22 @@ public class MainActivity extends MegaFragmentActivity {
         statusText.setText(msg);
       }
     });
+  }
+
+  public void login() {
+    application.createLoginDialog().show();
+  }
+
+  public void logout() {
+    application.createPromptDialog(
+        R.string.msg_are_you_sure_you_want_to_logout,
+        new DialogInterface.OnClickListener() {
+
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.dismiss();
+            application.logout();
+          }
+        }, null).show();
   }
 }

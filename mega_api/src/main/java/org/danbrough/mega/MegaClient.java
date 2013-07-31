@@ -275,6 +275,14 @@ public class MegaClient {
 
   }
 
+  /**
+   * {"a":[{"a":"t","i":"uRHghuyDqJ","t":{"f":[{"h":"9xERwLIa","t":1,"a":
+   * "VE8iL_y3eUW1KqOuL6vFfA"
+   * ,"k":"XF6DfmTorLE:J6lPWMFvJSw-8IQnGy5vFg","p":"I91ESJKZ"
+   * ,"ts":1375206239,"u"
+   * :"XF6DfmTorLE"}]},"ou":"XF6DfmTorLE"}],"sn":"QP7kECjmcgE"}
+   **/
+
   protected void procsc(JsonObject o) {
     log.trace("procsc() {}", o);
 
@@ -283,12 +291,54 @@ public class MegaClient {
     }
 
     if (o.has("sn")) {
-      this.scsn = o.get("sn").getAsString();
-      log.trace("scsn: {}", scsn);
+      setScsn(o.get("sn").getAsString());
     }
 
     if (o.has("a")) {
       log.trace("a: {}", o.get("a"));
+      procSC_a(o.get("a").getAsJsonArray());
+    }
+  }
+
+  protected void procSC_a(JsonArray array) {
+    for (int i = 0; i < array.size(); i++) {
+      JsonObject o = array.get(i).getAsJsonObject();
+      String action = o.get("a").getAsString();
+      if (action.equals("u")) {
+        log.info("node update");
+        // sc_updatenode();
+      } else if (action.equals("t")) {
+        log.info("node addition");
+        // sc_newnodes();
+        // mergenewshares();
+        // applykeys();
+
+      } else if (action.equals("d")) {
+        log.info("node deletion");
+        // sc_deltree();
+
+      } else if (action.equals("s")) {
+        log.info("share addition/update/revocation");
+        // sc_shares();
+
+      } else if (action.equals("c")) {
+        log.info("contact addition/update");
+        // sc_contacts();
+
+      } else if (action.equals("k")) {
+        log.info("crypto key reques");
+        // sc_keys();
+
+      } else if (action.equals("fa")) {
+
+      } else if (action.equals("")) {
+        log.info("file attribute update");
+
+      } else {
+        log.error("unknown action {}", action);
+        continue;
+      }
+
     }
   }
 
@@ -477,6 +527,7 @@ public class MegaClient {
   }
 
   public void setScsn(String scsn) {
+    log.trace("setScsn(): {}", scsn);
     this.scsn = scsn;
     startSC();
   }

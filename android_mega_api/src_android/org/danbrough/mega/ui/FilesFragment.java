@@ -10,7 +10,10 @@ package org.danbrough.mega.ui;
 import org.danbrough.mega.MegaApplication;
 import org.danbrough.mega.Node;
 import org.danbrough.mega.Node.NodeType;
+import org.danbrough.mega.R;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +32,7 @@ public class FilesFragment extends android.support.v4.app.Fragment {
       Bundle savedInstanceState) {
     log.info("onCreateView()");
     fileView = new ListView(getActivity());
+    registerForContextMenu(fileView);
 
     filesAdapter = new FilesAdapter(getActivity());
     fileView.setAdapter(filesAdapter);
@@ -39,7 +43,7 @@ public class FilesFragment extends android.support.v4.app.Fragment {
       public void onItemClick(AdapterView<?> parent, View view, int position,
           long id) {
         log.info("itemClicked: {}", filesAdapter.getItem(position));
-        onNodeClicked(filesAdapter.getItem(position));
+        onNodeClicked(view, filesAdapter.getItem(position));
       }
 
     });
@@ -49,7 +53,7 @@ public class FilesFragment extends android.support.v4.app.Fragment {
           @Override
           public boolean onItemLongClick(AdapterView<?> parent, View view,
               int position, long id) {
-            onNodeLongClicked(filesAdapter.getItem(position));
+            onNodeLongClicked(view, filesAdapter.getItem(position));
             return true;
           }
         });
@@ -62,20 +66,47 @@ public class FilesFragment extends android.support.v4.app.Fragment {
     return ((MegaApplication) getActivity().getApplication());
   }
 
-  protected void onNodeClicked(Node node) {
+  protected void onNodeClicked(View view, Node node) {
     log.debug("onNodeClicked(): {}", node);
     if (node.getNodeType() == NodeType.FOLDERNODE) {
       getApplication().setFolder(node);
     }
   }
 
+  protected AlertDialog.Builder createEditNodeDialog(final Node item) {
+    AlertDialog.Builder builder = getApplication().createAlertDialog();
+    builder.setTitle(item.getName());
+    final String actions[] = { getString(R.string.download),
+        getString(R.string.delete) };
+    builder.setItems(actions, new DialogInterface.OnClickListener() {
+
+      @Override
+      public void onClick(DialogInterface dialog, int which) {
+        log.debug("which: " + which);
+        if (actions[which].equals(getString(R.string.download))) {
+          getApplication().download(item);
+        }
+      }
+    });
+    builder.setNegativeButton(R.string.cancel,
+        new DialogInterface.OnClickListener() {
+
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.cancel();
+          }
+        });
+    return builder;
+  }
+
+  protected void onNodeLongClicked(View view, Node item) {
+    log.debug("onNodeLongClicked(): {}", item);
+    createEditNodeDialog(item).show();
+  }
+
   public void setFolder(Node node) {
     log.info("setFolder(); {}", node);
     filesAdapter.setFolder(node);
-  }
-
-  protected void onNodeLongClicked(Node item) {
-    log.debug("onNodeLongClicked(): {}", item);
   }
 
   public void refresh() {
