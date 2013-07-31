@@ -114,6 +114,8 @@ public class Node {
   @SerializedName("name")
   private String name;
 
+  private byte[] decodedKey = null;
+
   public Node() {
     super();
   }
@@ -172,6 +174,10 @@ public class Node {
 
   public void setKey(String key) {
     this.key = key;
+  }
+
+  public byte[] getDecodedKey() {
+    return decodedKey;
   }
 
   public int getSize() {
@@ -296,6 +302,7 @@ public class Node {
       }
       byte bkey[] = crypto.base64urldecode(k);
       bkey = crypto.decrypt_key(bkey, master_key);
+      this.decodedKey = bkey;
 
       log.debug("bkey.length " + bkey.length);
       if (nodeType == NodeType.FILENODE) {

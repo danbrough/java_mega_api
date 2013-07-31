@@ -7,6 +7,7 @@
  ******************************************************************************/
 package org.danbrough.mega;
 
+import java.io.File;
 import java.io.IOException;
 
 import android.app.Activity;
@@ -16,6 +17,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -105,6 +107,22 @@ public class MegaApplication extends Application {
       DialogInterface.OnClickListener positive,
       DialogInterface.OnClickListener negative) {
     return createPromptDialog(getString(message), positive, negative);
+  }
+
+  public void showMessage(final String message) {
+    runOnUiThread(new Runnable() {
+
+      @Override
+      public void run() {
+        createPromptDialog(message, new DialogInterface.OnClickListener() {
+
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.dismiss();
+          }
+        }, null).show();
+      }
+    });
   }
 
   public AlertDialog.Builder createPromptDialog(String message,
@@ -401,9 +419,27 @@ public class MegaApplication extends Application {
     client.setCurrentFolder(node);
   }
 
-  public void download(Node item) {
-    log.info("download() {}", item);
+  public void download(final Node node) {
+    log.info("download() {}", node);
 
+    File downloadDir = Environment
+        .getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+    File file = new File(downloadDir, node.getName());
+    client.enqueueCommand(new CommandGetFile(node, file) {
+      @Override
+      public void onError(Exception e) {
+        displayError(e);
+      }
+
+      @Override
+      public void onError(APIError error) {
+        displayError(error);
+      }
+
+      @Override
+      public void onResult(File result) {
+        showMessage("Saved to " + result.getAbsolutePath());
+      }
+    });
   }
-
 }

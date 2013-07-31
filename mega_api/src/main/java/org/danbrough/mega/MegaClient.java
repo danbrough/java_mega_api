@@ -683,4 +683,29 @@ public class MegaClient {
     return null;
   }
 
+  public Node getChildNode(Node parent, String name) {
+    for (Node child : getChildren(parent)) {
+      if (child.getName().equals(name))
+        return child;
+    }
+    return null;
+  }
+
+  public Node findNodeByPath(String path) {
+    if (rootNode == null)
+      return null;
+    if (path.equals("/"))
+      return rootNode;
+    String parts[] = path.split("/");
+    return findNodeByPath(rootNode, parts, 0);
+  }
+
+  private Node findNodeByPath(Node folder, String path[], int index) {
+    Node node = getChildNode(folder, path[index]);
+    if (index == path.length - 1)
+      return node;
+    if (node == null)
+      return null;
+    return findNodeByPath(node, path, index + 1);
+  }
 }

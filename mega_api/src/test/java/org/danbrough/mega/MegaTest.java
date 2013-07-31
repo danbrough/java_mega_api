@@ -21,6 +21,7 @@ public class MegaTest {
   MegaClient client;
   ThreadPool threadPool;
   FileHistory history;
+  MegaCrypto crypto = MegaCrypto.get();
 
   static final File confDir = new File(System.getProperty("user.dir"));;
   static final File sessionFile = new File(confDir, "megatest_session");
@@ -157,6 +158,18 @@ public class MegaTest {
     console.println(currentDir.getCanonicalPath());
   }
 
+  public void cmd_get(String path) throws IOException {
+    log.info("cmd_get(): {}", path);
+    final Node node = client.findNodeByPath(path);
+    log.debug("found node: {}", node);
+    if (node == null) {
+      log.error("cant find {}", path);
+      return;
+    }
+    File file = new File(currentDir, node.getName());
+    client.enqueueCommand(new CommandGetFile(node, file));
+  }
+
   public void cmd_lls() throws IOException {
     for (File file : currentDir.listFiles()) {
       console.println((file.isDirectory() ? "dir:  \t" : "file: \t")
@@ -274,7 +287,7 @@ public class MegaTest {
           } else if (cmd.equals("cd")) {
             log.error("cd not implemented");
           } else if (cmd.equals("get")) {
-            log.error("get not implemented");
+            cmd_get(words[1]);
           } else if (cmd.equals("put")) {
             log.error("put not implemented");
           } else if (cmd.equals("mkdir")) {
