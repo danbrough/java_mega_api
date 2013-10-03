@@ -24,7 +24,8 @@ public class MegaTest {
   MegaCrypto crypto = MegaCrypto.get();
 
   static final File confDir = new File(System.getProperty("user.dir"));;
-  static final File sessionFile = new File(confDir, "megatest_session");
+  static final File sessionFile = new File(confDir, "megatest_session.json");
+  static final File historyFile = new File(confDir, "megatest_history.txt");
 
   File currentDir = new File(".").getCanonicalFile();
 
@@ -43,7 +44,6 @@ public class MegaTest {
               + " not definied as either a system property or in the environment. Visit https://mega.co.nz/#sdk to create your application key");
     }
 
-    File historyFile = new File(confDir, "megatest_history");
     log.warn("writing command history to {}", historyFile);
     history = new FileHistory(historyFile);
     console.setHistory(history);
@@ -170,6 +170,26 @@ public class MegaTest {
     client.enqueueCommand(new CommandGetFile(node, file));
   }
 
+  public void cmd_put(String words[]) throws IOException {
+    StringBuffer buf = new StringBuffer();
+    for (int i = 1; i < words.length; i++)
+      buf.append(words[i]).append(' ');
+    String path = buf.toString().trim();
+    log.info("cmd_put(): {}", path);
+    File file = new File(path);
+
+    if (!file.exists()) {
+      throw new IOException("File not found: " + file);
+    }
+
+    if (file.isDirectory()) {
+      log.error("{} is a directory", file);
+      return;
+    }
+
+    client.enqueueCommand(new CommandPutFile(file, null));
+  }
+
   public void cmd_lls() throws IOException {
     for (File file : currentDir.listFiles()) {
       console.println((file.isDirectory() ? "dir:  \t" : "file: \t")
@@ -289,7 +309,7 @@ public class MegaTest {
           } else if (cmd.equals("get")) {
             cmd_get(words[1]);
           } else if (cmd.equals("put")) {
-            log.error("put not implemented");
+            cmd_put(words);
           } else if (cmd.equals("mkdir")) {
             log.error("mkdir not implemented");
           } else if (cmd.equals("rm")) {

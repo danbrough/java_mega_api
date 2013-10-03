@@ -14,10 +14,9 @@
     <string name="msg_invalid_username">Invalid username</string>
     <string name="msg_invalid_password">Invalid password</string>
     <string name="file_icon">File Icon</string>
-    <string name="msg_are_you_sure_you_want_to_logout">Are you sure you want to logout?</string>
     <string name="download">Download</string>
     <string name="delete">Delete</string>
     <string name="rename">Rename</string>
-
+	<string name="upload">Upload</string>
 
 </resources>

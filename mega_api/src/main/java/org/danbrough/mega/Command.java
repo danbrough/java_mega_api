@@ -27,6 +27,10 @@ public class Command<T> extends Callback<T> {
     args.addProperty(name, value);
   }
 
+  protected void addArg(String name, long value) {
+    args.addProperty(name, value);
+  }
+
   public JsonObject getPayload() {
     return args;
   }

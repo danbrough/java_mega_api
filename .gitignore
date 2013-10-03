@@ -2,17 +2,4 @@
 */gen/*
 .settings
 *.pydevproject
-/android_mega_api_test/res/values/appkey.xml
-/android_mega_api/examples
-/android_mega_api_test/bin
-/android_mega_api_test/gen
-/android_mega_api/bin
-/android_mega_api/gen
-/mega_api/target/
-/mega_api/docs/
-/mega_api/cpp
 /mega_api_old
-/mega_api/src/test/resources/logback-test.xml
-**/megatest_history
-**/megatest_session
-

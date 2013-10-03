@@ -21,7 +21,6 @@ import org.danbrough.mega.ui.FilesFragment;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
-import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
@@ -76,10 +75,11 @@ public class MainActivity extends MegaFragmentActivity {
     log.error("onCreateOptionsMenu();");
 
     int actions[] = { R.string.login, R.string.logout,
-        R.string.label_updatefiles, R.string.label_whoami };
+        R.string.label_updatefiles, R.string.label_whoami, R.string.upload };
     for (int action : actions) {
       actionMenuItems.put(action, addMenu(menu, action));
     }
+
     configureLayout();
     return super.onCreateOptionsMenu(menu);
 
@@ -110,8 +110,6 @@ public class MainActivity extends MegaFragmentActivity {
   @Override
   protected void onResume() {
     super.onResume();
-    if (dialogOnBackPressed != null)
-      dialogOnBackPressed.cancel();
     configureLayout();
   }
 
@@ -126,6 +124,7 @@ public class MainActivity extends MegaFragmentActivity {
         if (!actionMenuItems.isEmpty()) {
           actionMenuItems.get(R.string.login).setVisible(!loggedIn);
           actionMenuItems.get(R.string.logout).setVisible(loggedIn);
+          actionMenuItems.get(R.string.upload).setVisible(loggedIn);
         }
 
         StringBuffer status = new StringBuffer();
@@ -205,8 +204,6 @@ public class MainActivity extends MegaFragmentActivity {
     }
   }
 
-  private AlertDialog dialogOnBackPressed = null;
-
   @Override
   public void onBackPressed() {
     log.debug("onBackPressed()");
@@ -221,38 +218,22 @@ public class MainActivity extends MegaFragmentActivity {
       }
     }
 
-    if (dialogOnBackPressed == null) {
-      dialogOnBackPressed = new AlertDialog(this, false, null) {
-        @Override
-        public void onBackPressed() {
-          super.onBackPressed();
-          cancel();
-          MainActivity.this.finish();
-        }
-      };
+    application.createPromptDialog(R.string.msg_do_you_want_to_quit,
+        new DialogInterface.OnClickListener() {
 
-      dialogOnBackPressed.setMessage("Press back again if you want to quit.");
-      dialogOnBackPressed.setCancelable(true);
-      dialogOnBackPressed.setCanceledOnTouchOutside(true);
-      dialogOnBackPressed
-          .setOnCancelListener(new DialogInterface.OnCancelListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.cancel();
+            finish();
+          }
+        }, new DialogInterface.OnClickListener() {
 
-            @Override
-            public void onCancel(DialogInterface dialog) {
-              dialogOnBackPressed = null;
-            }
-          });
-      dialogOnBackPressed.setButton(DialogInterface.BUTTON_POSITIVE,
-          getString(R.string.ok), new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.cancel();
+          }
+        }).show();
 
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-              dialog.cancel();
-            }
-          });
-
-      dialogOnBackPressed.show();
-    }
   }
 
   public void whoami() {
@@ -311,8 +292,7 @@ public class MainActivity extends MegaFragmentActivity {
   }
 
   public void logout() {
-    application.createPromptDialog(
-        R.string.msg_are_you_sure_you_want_to_logout,
+    application.createPromptDialog(R.string.msg_do_you_want_to_logout,
         new DialogInterface.OnClickListener() {
 
           @Override

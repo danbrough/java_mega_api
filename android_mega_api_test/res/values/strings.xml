@@ -4,5 +4,7 @@
     <string name="app_name">Mega-Api Test</string>
     <string name="label_whoami">Who Am I?</string>
     <string name="label_updatefiles">Update Files</string>
-    
+    <string name="msg_do_you_want_to_quit">Do you want to quit?</string>
+    <string name="msg_do_you_want_to_logout">Do you want to logout?</string>
+
 </resources>

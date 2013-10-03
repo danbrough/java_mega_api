@@ -1,1 +1,5 @@
 /cpp
+/megatest_history.txt
+/megatest_session.json
+/src/test/resources/logback-test.xml
+/target

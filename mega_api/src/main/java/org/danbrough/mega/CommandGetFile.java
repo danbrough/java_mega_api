@@ -59,6 +59,7 @@ public class CommandGetFile extends Command<File> {
     byte iv[] = new byte[] { bkey[16], bkey[17], bkey[18], bkey[19], bkey[20],
         bkey[21], bkey[22], bkey[23], 0, 0, 0, 0, 0, 0, 0, 0 };
     Cipher dl_aes = crypto.createCipherCTR(new_key, Cipher.DECRYPT_MODE, iv);
+    Cipher dl_mac = crypto.createCipher(new_key, Cipher.DECRYPT_MODE);
 
     URLConnection conn = new URL(response.g).openConnection();
     InputStream input = conn.getInputStream();
